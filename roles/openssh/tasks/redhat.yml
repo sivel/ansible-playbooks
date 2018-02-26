@@ -1,0 +1,14 @@
+---
+- name: RedHat | Set openssh_loaded_os_family
+  set_fact:
+    openssh_loaded_os_family: "{{ ansible_os_family }}"
+
+- name: RedHat | Ensure OpenSSH is installed
+  yum:
+    name:
+      - openssh
+      - openssh-clients
+      - openssh-server
+    state: latest
+  notify:
+    - Restart SSHd

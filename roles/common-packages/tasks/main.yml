@@ -1,0 +1,49 @@
+- name: Remove unwanted packages
+  apt:
+    name:
+      - landscape-client
+      - landscape-common
+      - whoopsie
+      - update-notifier-common
+      - ubuntu-release-upgrader-core
+      - resolvconf
+    state: absent
+
+- name: Install common packages
+  apt:
+    name:
+      - git
+      - python-pip
+      - software-properties-common
+      - python-software-properties
+      - vim-nox
+      - ntp
+      - screen
+    state: latest
+    update_cache: yes
+    cache_valid_time: 86400
+
+- name: Make sure ntp is running and enabled
+  service:
+    name: ntp
+    state: started
+    enabled: yes
+
+- name: Set vim-nox as the default editor
+  alternatives:
+    name: editor
+    path: /usr/bin/vim.nox
+
+- name: Install pip
+  shell: curl -s https://bootstrap.pypa.io/get-pip.py | python
+  args:
+    creates: /usr/local/bin/pip
+
+- name: Update python modules from pypi
+  pip:
+    name:
+      - setuptools
+      - pip
+      - virtualenvwrapper
+      - ipython
+    state: latest

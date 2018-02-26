@@ -1,0 +1,18 @@
+[Unit]
+Description=ansible-template-ui gunicorn daemon
+Requires=ansible-template-ui.socket
+After=network.target
+
+[Service]
+PIDFile=/run/gunicorn/pid
+User=sivel
+Group=sivel
+RuntimeDirectory=gunicorn
+WorkingDirectory=/var/www/ansible-template-ui
+ExecStart=/var/www/ansible-template-ui/venv/bin/gunicorn --pid /run/gunicorn/pid --max-requests 100 -k gevent --capture-output --bind /run/gunicorn/ansible-template-ui.socket ansible_template_ui:app
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

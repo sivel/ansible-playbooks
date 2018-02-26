@@ -1,0 +1,44 @@
+---
+- name: Remove the root users ssh key
+  file:
+    path: /root/.ssh/authorized_keys
+    force: yes
+    state: absent
+
+- getent:
+    database: passwd
+    key: ubuntu
+    fail_key: false
+
+- when: "'ubuntu' in getent_passwd"
+  block:
+    - name: Disable the ubuntu user
+      user:
+        name: ubuntu
+        password: "!"
+        shell: /usr/sbin/nologin
+
+    - name: Remove the ubuntu users ssh key
+      file:
+        path: /home/ubuntu/.ssh/authorized_keys
+        force: yes
+        state: absent
+
+- getent:
+    database: passwd
+    key: vagrant
+    fail_key: false
+
+- when: "'vagrant' in getent_passwd"
+  block:
+    - name: Disable the vagrant user
+      user:
+        name: vagrant
+        password: "!"
+        shell: /usr/sbin/nologin
+
+    - name: Remove the vagrant users ssh key
+      file:
+        path: /home/vagrant/.ssh/authorized_keys
+        force: yes
+        state: absent

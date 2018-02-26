@@ -1,0 +1,9 @@
+---
+opensshd_init_name:
+  Debian: ssh
+  RedHat: sshd
+
+opensshd_default_Subsystem:
+  sftp:
+    Debian: /usr/lib/openssh/sftp-server
+    RedHat: /usr/libexec/openssh/sftp-server

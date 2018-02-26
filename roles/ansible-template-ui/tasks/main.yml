@@ -1,0 +1,101 @@
+---
+- name: Make git dir
+  file:
+    path: /var/www/ansible-template-ui
+    state: directory
+    owner: sivel
+    group: sivel
+    mode: '0755'
+  become: true
+
+- name: Clone pr-traige
+  git:
+    repo: https://github.com/sivel/ansible-template-ui.git
+    dest: "/var/www/ansible-template-ui"
+    update: yes
+    force: yes
+    accept_hostkey: yes
+  notify:
+    - Restart ansible-template-ui
+
+- name: Create virtualenv and install app requirements
+  pip:
+    requirements: "/var/www/ansible-template-ui/requirements.txt"
+    virtualenv: "/var/www/ansible-template-ui/venv"
+    state: latest
+  notify:
+    - Restart ansible-template-ui
+
+- name: Create virtualenv and install deploy requirements
+  pip:
+    requirements: "/var/www/ansible-template-ui/deploy-requirements.txt"
+    virtualenv: "/var/www/ansible-template-ui/venv"
+    state: latest
+  notify:
+    - Restart ansible-template-ui
+
+- become: true
+  block:
+    - name: Install tmpfile
+      copy:
+        src: tmpfiles_gunicorn.conf
+        dest: /etc/tmpfiles.d/gunicorn.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Install systemd service file
+      copy:
+        src: ansible-template-ui.service
+        dest: /etc/systemd/system/ansible-template-ui.service
+        owner: root
+        group: root
+        mode: '0644'
+      register: atu_service
+      notify:
+        - Restart ansible-template-ui
+
+    - name: Install systemd socket file
+      copy:
+        src: ansible-template-ui.socket
+        dest: /etc/systemd/system/ansible-template-ui.socket
+        owner: root
+        group: root
+        mode: '0644'
+      register: atu_socket
+      notify:
+        - Restart ansible-template-ui
+
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
+      when: atu_service is changed or atu_socket is changed
+
+    - name: Ensure service is started
+      systemd:
+        name: ansible-template-ui.socket
+        state: started
+        enabled: yes
+
+- name: Create nightly rebuild cron
+  cron:
+    name: Docker Hub Rebuild Trigger
+    job: |
+      curl -H "Content-Type: application/json" --data '{"build": true}' -X POST https://registry.hub.docker.com/u/sivel/ansible-template-ui/trigger/{{ docker_hub_trigger_token }}/
+    minute: 0
+    hour: 0
+  when: docker_hub_trigger_token|default(None, true)
+
+- name: Create docker pull cron
+  cron:
+    name: ansible-template-ui docker pull
+    job: 'docker pull --all-tags sivel/ansible-template-ui >/dev/null 2>&1'
+    minute: 0
+    hour: 1
+
+- name: Create docker system prune cron
+  cron:
+    name: ansible-template-ui docker system prune
+    job: 'docker system prune --force >/dev/null 2>&1'
+    minute: 0
+    hour: 2

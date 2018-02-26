@@ -1,0 +1,4 @@
+---
+- name: set timezone to America/Chicago
+  timezone:
+    name: America/Chicago

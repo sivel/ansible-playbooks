@@ -1,0 +1,34 @@
+- name: Install deps
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - software-properties-common
+    state: latest
+    update_cache: yes
+    cache_valid_time: 86400
+
+- name: Add docker apt-key
+  apt_key:
+    id: '0EBFCD88'
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add docker repo
+  apt_repository:
+    repo: 'deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable'
+    state: present
+    update_cache: yes
+
+- name: Install docker
+  apt:
+    name: docker-ce
+    state: latest
+
+- name: Add docker group to users
+  user:
+    append: true
+    name: "{{ item }}"
+    groups:
+      - docker
+  with_items: "{{ docker_users }}"

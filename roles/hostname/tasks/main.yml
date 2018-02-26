@@ -1,0 +1,13 @@
+---
+- name: Configure Hostname
+  hostname:
+    name: "{{ inventory_hostname }}"
+
+- name: Update /etc/hosts
+  template:
+    src: hosts.j2
+    dest: /etc/hosts
+    backup: yes
+    group: root
+    owner: root
+    mode: 0644

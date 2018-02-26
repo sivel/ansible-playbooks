@@ -1,0 +1,37 @@
+---
+- name: Create users
+  user:
+    name: "{{ item.name }}"
+    comment: "{{ item.comment|default(item.name) }}"
+    state: "{{ item.state|default('present') }}"
+    shell: "{{ item.shell|default('/bin/bash') }}"
+    createhome: "{{ item.createhome|default('yes') }}"
+    groups: "{{ item.groups|default([]) }}"
+    password: "{{ item.password }}"
+    update_password: "{{ item.update_password|default('on_create') }}"
+    append: true
+  when: item.hostgroups == 'all' or inventory_hostname in item.hostgroups or item.hostgroups|intersect(group_names)|list != []
+  with_items: "{{ users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Create hushlogin
+  copy:
+    content: ''
+    dest: '/home/{{ item.name }}/.hushlogin'
+  when: item.hostgroups == 'all' or inventory_hostname in item.hostgroups or item.hostgroups|intersect(group_names)|list != []
+  with_items: "{{ users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Add Authorized Keys
+  authorized_key:
+    user: "{{ item.0.name }}"
+    key: "{{ item.1 }}"
+    state: present
+  when: item.0.keys is defined and item.0.keys and (item.0.hostgroups == 'all' or inventory_hostname in item.0.hostgroups or item.0.hostgroups|intersect(group_names)|list != [])
+  with_subelements:
+    - "{{ users }}"
+    - keys
+  loop_control:
+    label: "{{ item.0.name }}"

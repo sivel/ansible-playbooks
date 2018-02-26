@@ -1,0 +1,31 @@
+ansible.sivel.net {
+    tls matt@sivel.net
+    root /var/www/ansible.sivel.net
+    git https://github.com/sivel/ansible.sivel.net.git
+
+    redir /bycifailures.html /pr{uri} 301
+    redir /byconflict.html /pr{uri} 301
+    redir /byfile.html /pr{uri} 301
+    redir /bymergecommits.html /pr{uri} 301
+    redir /bymultiauthor.html /pr{uri} 301
+    redir /byuser.html /pr{uri} 301
+
+    log stdout
+    errors stdout
+}
+
+ansible.sivel.net/pr/ {
+    tls matt@sivel.net
+    root /var/www/pr-triage/htmlout
+    log stdout
+    errors stdout
+}
+
+ansible.sivel.net/test/ {
+    tls matt@sivel.net
+    proxy / unix:/run/gunicorn/ansible-template-ui.socket {
+        transparent
+    }
+    log stdout
+    errors stdout
+}

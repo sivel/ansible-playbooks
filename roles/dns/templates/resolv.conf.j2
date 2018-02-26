@@ -1,0 +1,7 @@
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+{% if 'noc' in group_names %}
+search noc.sivel.net
+{% else %}
+search sivel.net
+{% endif %}

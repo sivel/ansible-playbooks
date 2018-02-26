@@ -1,0 +1,12 @@
+---
+- hosts: locutus
+  roles:
+    - role: caddy
+      caddyfile: "{{ inventory_dir }}/files/locutus/Caddyfile"
+      become: true
+      tags:
+        - caddy
+
+    - role: weechat
+      tags:
+        - weechat

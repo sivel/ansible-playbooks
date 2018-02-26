@@ -1,0 +1,5 @@
+- name: Restart ansible-template-ui
+  systemd:
+    name: ansible-template-ui.socket
+    state: restarted
+  become: true

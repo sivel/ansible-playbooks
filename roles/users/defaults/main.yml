@@ -1,0 +1,7 @@
+---
+state: present
+shell: /bin/bash
+createhome: yes
+groups: []
+update_password: on_create
+has_keys: False

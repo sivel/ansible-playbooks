@@ -1,0 +1,8 @@
+locutus.sivel.net:9001 {
+    proxy /weechat http://127.0.0.1:9000 {
+        websocket
+    }
+
+    log stdout
+    errors stdout
+}

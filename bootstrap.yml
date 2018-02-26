@@ -1,0 +1,15 @@
+- name: Bootstrap hosts
+  hosts: all
+  gather_facts: false
+  tags:
+    - bootstrap
+  tasks:
+    - name: Test ansible round trip
+      ping:
+      ignore_errors: true
+      register: ping_test
+
+    - name: Install python
+      raw: apt-get update && apt-get install -y python
+      when: ping_test is failed
+      become: true

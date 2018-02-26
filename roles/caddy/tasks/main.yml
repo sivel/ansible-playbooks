@@ -1,0 +1,164 @@
+---
+- assert:
+    that:
+      - ansible_service_mgr == 'systemd'
+    msg: "This role currently only supports systemd"
+
+- name: Get caddy version
+  command: caddy -version
+  changed_when: false
+  ignore_errors: true
+  register: caddy_version_output
+
+- set_fact:
+    caddy_installed_version: "{{ caddy_version_output.stdout.split()[1] }}"
+  when: caddy_version_output is successful
+
+- set_fact:
+    caddy_installed_version: "0"
+  when: caddy_version_output is failed
+
+- when: install_caddy|bool or caddy_installed_version is not version(caddy_version, 'eq')
+  block:
+    - name: Fetch caddy
+      get_url:
+        url: "{{ caddy_base_url }}"
+        dest: /tmp/caddy.tar.gz
+        headers: 'Accept:application/tar+gzip'
+
+    - name: Create extraction directory
+      file:
+        path: /tmp/caddy
+        state: directory
+
+    - name: Unarchive caddy
+      unarchive:
+        src: /tmp/caddy.tar.gz
+        dest: /tmp/caddy
+        remote_src: yes
+
+    - name: Move caddy in place
+      copy:
+        src: /tmp/caddy/caddy
+        dest: /usr/local/bin/caddy
+        remote_src: true
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Allow caddy to bind to privileged ports
+      command: setcap 'cap_net_bind_service=+ep' /usr/local/bin/caddy
+
+    - name: Copy systemd unit file into place
+      copy:
+        src: /tmp/caddy/init/linux-systemd/caddy.service
+        dest: /etc/systemd/system/caddy.service
+        owner: root
+        group: root
+        mode: '0644'
+        remote_src: true
+      register: systemd_caddy_unit_file
+
+    - name: systemd daemon reload
+      systemd:
+        daemon_reload: yes
+      when: systemd_caddy_unit_file is changed
+
+    - name: Clean up temporary files
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /tmp/caddy.tar.gz
+        - /tmp/caddy/
+
+# - name: Create systemd override directory
+#   file:
+#     state: directory
+#     path: /etc/systemd/system/caddy.service.d
+#     owner: root
+#     group: root
+#     mode: '0755'
+#
+# - name: Install systemd override
+#   copy:
+#     src: restart.conf
+#     dest: /etc/systemd/system/caddy.service.d/restart.conf
+#     owner: root
+#     group: root
+#     mode: '0644'
+#   register: systemd_caddy_override_unit_file
+#
+# - name: systemd daemon reload
+#   systemd:
+#     daemon_reload: yes
+#   when: systemd_caddy_override_unit_file is changed
+
+- name: Ensure the www-data group exists
+  group:
+    gid: "33"
+    state: present
+    name: www-data
+    system: yes
+
+- name: Ensure the www-data user exists
+  user:
+    name: www-data
+    uid: 33
+    group: www-data
+    home: /var/www
+    shell: /usr/sbin/nologin
+    system: yes
+    createhome: no
+
+- name: Ensure caddy conf dir
+  file:
+    path: /etc/caddy
+    state: directory
+    owner: root
+    group: www-data
+
+- name: Ensure caddy ssl dir
+  file:
+    path: /etc/ssl/caddy
+    state: directory
+    owner: root
+    group: www-data
+    mode: '0770'
+
+- stat:
+    path: "{{ caddyfile }}"
+  register: caddyfile_local_stat
+  when: caddyfile|default(None, True)
+  delegate_to: localhost
+
+- name: Add Caddyfile
+  copy:
+    src: "{{ caddyfile }}"
+    dest: /etc/caddy/Caddyfile
+    owner: www-data
+    group: www-data
+    mode: '0444'
+  when: caddyfile_local_stat is not skipped and caddyfile_local_stat.stat.exists
+  notify:
+    - Restart caddy
+
+- name: Create caddy home directory
+  file:
+    path: /var/www
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+
+- name: Check for caddyfile
+  stat:
+    path: /etc/caddy/Caddyfile
+  register: caddyfile_remote_stat
+
+- name: Start and enable caddy
+  systemd:
+    name: caddy
+    enabled: yes
+    state: started
+  when: caddyfile_remote_stat.stat.exists

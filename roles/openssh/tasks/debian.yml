@@ -1,0 +1,15 @@
+---
+- name: Debian | Set openssh_loaded_os_family
+  set_fact:
+    openssh_loaded_os_family: "{{ ansible_os_family }}"
+
+- name: Debian | Ensure OpenSSH is installed
+  apt:
+    name:
+      - openssh-client
+      - openssh-server
+    update_cache: yes
+    cache_valid_time: 86400
+    state: latest
+  notify:
+    - Restart SSHd

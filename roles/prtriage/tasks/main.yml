@@ -1,0 +1,39 @@
+---
+- name: Make git dir
+  file:
+    path: /var/www/pr-triage
+    state: directory
+    owner: sivel
+    group: sivel
+    mode: '0755'
+  become: true
+
+- name: Clone pr-traige
+  git:
+    repo: https://github.com/sivel/pr-triage.git
+    dest: "/var/www/pr-triage"
+    update: yes
+    force: yes
+    accept_hostkey: yes
+
+- name: Create virtualenv and install requirements
+  pip:
+    requirements: "/var/www/pr-triage/requirements.txt"
+    virtualenv: "/var/www/pr-triage/venv"
+    state: latest
+
+- name: Create htmlout dir
+  file:
+    path: /var/www/pr-triage/htmlout
+    state: directory
+
+- name: Add ~/.triage.yaml configuration file
+  template:
+    src: triage.yaml.j2
+    dest: '/var/www/pr-triage/triage.yaml'
+
+- name: Install triage cron
+  cron:
+    name: "pr-triage"
+    job: 'cd /var/www/pr-triage/ && /var/www/pr-triage/venv/bin/python /var/www/pr-triage/triage.py >> /var/www/pr-triage/triage.log 2>&1'
+    minute: 30

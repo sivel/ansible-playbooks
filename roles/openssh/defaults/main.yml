@@ -1,0 +1,111 @@
+---
+opensshd_AcceptEnv:
+  - LANG
+  - LC_*
+
+opensshd_AddressFamily: "any"
+
+opensshd_AllowAgentForwarding: "yes"
+
+opensshd_AllowTcpForwarding: "yes"
+
+opensshd_AuthorizedKeysFile: .ssh/authorized_keys
+
+opensshd_Banner: "none"
+
+opensshd_ChallengeResponseAuthentication: "no"
+
+opensshd_ClientAliveCountMax: 3
+
+opensshd_ClientAliveInterval: 0
+
+opensshd_Compression: delayed
+
+opensshd_GatewayPorts: "no"
+
+opensshd_GSSAPIAuthentication: "no"
+
+opensshd_GSSAPICleanupCredentials: "yes"
+
+opensshd_HostbasedAuthentication: "no"
+
+opensshd_HostbasedUsesNameFromPacketOnly: "no"
+
+opensshd_IgnoreRhosts: "yes"
+
+opensshd_IgnoreUserKnownHosts: "no"
+
+opensshd_KerberosAuthentication: "no"
+
+opensshd_KerberosOrLocalPasswd: "yes"
+
+opensshd_KerberosTicketCleanup: "yes"
+
+opensshd_KeyRegenerationInterval: 3600
+
+opensshd_ListenAddress: []
+
+opensshd_LoginGraceTime: 120
+
+opensshd_LogLevel: "INFO"
+
+opensshd_Match: {}
+
+opensshd_MaxAuthTries: 6
+
+opensshd_MaxStartups: "10:30:100"
+
+opensshd_PasswordAuthentication: "yes"
+
+opensshd_PermitEmptyPasswords: "no"
+
+opensshd_PermitOpen: []
+
+opensshd_PermitRootLogin: "yes"
+
+opensshd_PermitTunnel: "no"
+
+opensshd_PermitUserEnvironment: "no"
+
+opensshd_PidFile: "/var/run/sshd.pid"
+
+opensshd_Port: 22
+
+opensshd_PrintLastLog: "yes"
+
+opensshd_PrintMotd: "yes"
+
+opensshd_Protocol: 2
+
+opensshd_PubkeyAuthentication: "yes"
+
+opensshd_RhostsRSAAuthentication: "no"
+
+opensshd_RSAAuthentication: "yes"
+
+opensshd_ServerKeyBits: 1024
+
+opensshd_StrictModes: "yes"
+
+opensshd_Subsystem:
+  sftp: "{{ opensshd_default_Subsystem.sftp[ansible_os_family] }}"
+
+opensshd_SyslogFacility: "AUTH"
+
+opensshd_TCPKeepAlive: "yes"
+
+opensshd_UseDNS: "yes"
+
+opensshd_UseLogin: "no"
+
+opensshd_UsePAM: "yes"
+
+opensshd_UsePrivilegeSeparation: "yes"
+
+opensshd_X11DisplayOffset: 10
+
+opensshd_X11Forwarding: "no"
+
+opensshd_X11UseLocalhost: "yes"
+
+opensshd_XAuthLocation: /usr/X11R6/bin/xauth

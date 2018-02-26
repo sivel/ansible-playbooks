@@ -1,0 +1,38 @@
+---
+- name: Install apt key
+  apt_key:
+    id: 11E9DE8848F2B65222AA75B8D1820DB22A11534E
+    keyserver: ha.pool.sks-keyservers.net
+    state: present
+  become: true
+
+- name: Install apt repository
+  apt_repository:
+    repo: 'deb https://weechat.org/ubuntu {{ ansible_distribution_release }} main'
+    state: present
+    filename: "weechat"
+    update_cache: yes
+  become: true
+
+- name: Install weechat
+  apt:
+    name:
+      - weechat-curses
+      - weechat-plugins
+      - weechat-python
+      - weechat-perl
+    state: latest
+    update_cache: yes
+    cache_valid_time: 86400
+  become: true
+
+- name: Make local bin dir
+  file:
+    path: '~/bin'
+    state: directory
+
+- name: Add irc script
+  copy:
+    src: irc
+    dest: '~/bin/irc'
+    mode: '0755'

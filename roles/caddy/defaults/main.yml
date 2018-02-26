@@ -1,0 +1,5 @@
+caddy_plugins: []
+caddy_arch: "{{ (ansible_userspace_bits == '64')|ternary('amd64', '386') }}"
+caddy_base_url: 'https://caddyserver.com/download/{{ ansible_system|lower }}/{{ caddy_arch }}?license=personal&plugins={{ caddy_plugins|join(",") }}'
+caddy_version: "0.10.10"
+install_caddy: false

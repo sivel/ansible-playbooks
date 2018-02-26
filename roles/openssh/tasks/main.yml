@@ -1,0 +1,25 @@
+---
+- import_tasks: debian.yml
+  when: ansible_os_family == 'Debian'
+
+- import_tasks: redhat.yml
+  when: ansible_os_family == 'RedHat'
+
+- import_tasks: default.yml
+  when: openssh_loaded_os_family|default(False) == False
+
+- name: Configure SSHd
+  template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    group: root
+    owner: root
+    mode: 0600
+  notify:
+    - Restart SSHd
+  when: openssh_loaded_os_family|default(False) != False
+
+- name: Ensure SSHd is configured to start on boot
+  service:
+    name: "{{ opensshd_init_name[ansible_os_family] }}"
+    enabled: yes

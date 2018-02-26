@@ -1,0 +1,4 @@
+- import_playbook: bootstrap.yml
+- import_playbook: common.yml
+- import_playbook: riogrande.yml
+- import_playbook: locutus.yml

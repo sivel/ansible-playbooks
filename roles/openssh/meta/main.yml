@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  author: Matt Martz
+  description: Install and configure openssh
+  license: Apache License, Version 2.0
+  min_ansible_version: 1.4
+  platforms:
+    - name: EL
+      versions:
+        - all
+    - name: Ubuntu
+      versions:
+        - all
+    - name: Debian
+      versions:
+        - all
+  categories:
+    - system
+dependencies: []

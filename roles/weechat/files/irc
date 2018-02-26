@@ -1,0 +1,5 @@
+#!/bin/bash
+screen -dr weechat
+if [ $? -ne 0 ]; then
+    screen -S weechat weechat
+fi
