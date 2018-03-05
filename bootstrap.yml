@@ -10,6 +10,6 @@
       register: ping_test
 
     - name: Install python
-      raw: apt-get update && apt-get install -y python
+      raw: apt-get update && apt-get install -y python3
       when: ping_test is failed
       become: true
