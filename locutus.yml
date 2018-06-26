@@ -10,3 +10,8 @@
     - role: weechat
       tags:
         - weechat
+
+    - role: mosh
+      tags:
+        - mosh
+      become: true

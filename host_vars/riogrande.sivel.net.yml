@@ -3,3 +3,4 @@ static_ip: 99.40.229.33
 netmask: 255.255.255.248
 gateway: 99.40.229.38
 manage_interfaces: true
+google_dns: true

@@ -35,9 +35,10 @@
     path: /usr/bin/vim.nox
 
 - name: Install pip
-  shell: curl -s https://bootstrap.pypa.io/get-pip.py | python
+  shell: curl -s https://bootstrap.pypa.io/get-pip.py | python3
   args:
-    creates: /usr/local/bin/pip
+    creates: /usr/local/bin/pip3
+    warn: no
 
 - name: Update python modules from pypi
   pip:

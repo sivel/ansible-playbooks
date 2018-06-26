@@ -1,4 +1,10 @@
 ---
+- name: Install deps
+  apt:
+    name: python
+    state: latest
+  become: true
+
 - name: Make git dir
   file:
     path: /var/www/pr-triage

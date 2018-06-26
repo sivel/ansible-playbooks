@@ -10,7 +10,7 @@
     key: ubuntu
     fail_key: false
 
-- when: "'ubuntu' in getent_passwd"
+- when: getent_passwd.ubuntu|default(False)
   block:
     - name: Disable the ubuntu user
       user:
@@ -29,7 +29,7 @@
     key: vagrant
     fail_key: false
 
-- when: "'vagrant' in getent_passwd"
+- when: getent_passwd.vagrant|default(False)
   block:
     - name: Disable the vagrant user
       user:
