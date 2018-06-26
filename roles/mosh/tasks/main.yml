@@ -1,0 +1,5 @@
+- apt:
+    name: mosh
+    state: latest
+    update_cache: yes
+    cache_valid_time: 86400
