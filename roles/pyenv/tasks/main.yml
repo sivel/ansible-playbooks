@@ -1,0 +1,41 @@
+- name: Install pyenv deps
+  apt:
+    name:
+      - make
+      - build-essential
+      - libssl-dev
+      - zlib1g-dev
+      - libbz2-dev
+      - libreadline-dev
+      - libsqlite3-dev
+      - wget
+      - curl
+      - llvm
+      - libncurses5-dev
+      - libncursesw5-dev
+      - xz-utils
+      - tk-dev
+    state: latest
+    update_cache: yes
+    cache_valid_time: 86400
+  become: true
+
+- name: Clone pyenv
+  git:
+    repo: https://github.com/pyenv/pyenv.git
+    dest: ~/.pyenv
+    force: yes
+
+- copy:
+    src: pyenv.sh
+    dest: ~/.profile.d/pyenv.sh
+
+- command: "pyenv install {{ item }}"
+  args:
+    creates: "/home/sivel/.pyenv/versions/{{ item }}"
+  loop:
+    - 2.7.14
+    - 3.6.5
+  environment:
+    PYENV_ROOT: "{{ ansible_env.HOME }}/.pyenv"
+    PATH: "{{ ansible_env.HOME }}/.pyenv/bin:{{ ansible_env.PATH }}"

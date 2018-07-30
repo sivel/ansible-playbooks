@@ -1,0 +1,23 @@
+- copy:
+    src: profile
+    dest: ~/.profile
+
+- file:
+    path: ~/.profile.d
+    state: directory
+
+# - copy:
+#     src: start-ssh-agent.sh
+#     dest: ~/.profile.d/start-ssh-agent.sh
+# 
+- copy:
+    src: venv.sh
+    dest: ~/.profile.d/venv.sh
+
+- copy:
+    src: vimrc
+    dest: ~/.vimrc
+
+- copy:
+    src: gitconfig
+    dest: ~/.gitconfig

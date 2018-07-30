@@ -1,0 +1,26 @@
+---
+- hosts: ath
+  roles:
+    - role: mosh
+      tags:
+        - mosh
+      become: true
+
+    - role: docker
+      docker_users:
+        - sivel
+      tags:
+        - docker
+      become: true
+
+    - role: pydev
+      tags:
+        - pydev
+
+    - role: pyenv
+      tags:
+        - pyenv
+
+    - role: ansibledev
+      tags:
+        - ansibledev

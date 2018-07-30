@@ -1,0 +1,133 @@
+filetype off
+"execute pathogen#infect()
+"execute pathogen#helptags()
+"filetype plugin off
+"filetype plugin indent off
+"set rtp+=/Users/matt/git/bling/vim-airline
+"set runtimepath+=/Users/matt/go/src/code.google.com/p/go/misc/vim
+"filetype plugin indent on
+"Disabled due to $VIM/ftplugin/python.vim overriding my softtabstop=0
+filetype plugin on
+"filetype indent on
+syntax on
+
+set background=light
+
+hi visual term=reverse cterm=reverse ctermbg=NONE guifg=NONE guibg=NONE
+
+setlocal tabstop=4 softtabstop=0 expandtab shiftwidth=4 nosmarttab
+
+set nocompatible
+set backspace=indent,eol,start
+set history=50
+set ruler
+set cursorline
+set incsearch
+set laststatus=2
+set list listchars=tab:›·,trail:▒
+set linespace=0
+set binary
+set modeline
+set modelines=1
+set pastetoggle=<F6>
+
+hi SpecialKey ctermfg=DarkGrey
+
+if &term=="xterm" || &term=="xterm-color"
+     set t_Co=256
+     set t_Sb=^[4%dm
+     set t_Sf=^[3%dm
+     :imap <Esc>Oq 1
+     :imap <Esc>Or 2
+     :imap <Esc>Os 3
+     :imap <Esc>Ot 4
+     :imap <Esc>Ou 5
+     :imap <Esc>Ov 6
+     :imap <Esc>Ow 7
+     :imap <Esc>Ox 8
+     :imap <Esc>Oy 9
+     :imap <Esc>Op 0
+     :imap <Esc>On .
+     :imap <Esc>OQ /
+     :imap <Esc>OR *
+     :imap <Esc>Ol +
+     :imap <Esc>OS -
+endif
+
+"Custom Commands
+command FT 1,$s/›···/\t/g
+command ES 1,$s/\ *$//g
+"command L
+command PT 0r ~/python/test.tmpl
+command -nargs=1 ML :normal i# vim:set ts=<args> sw=<args> expandtab:<ESC>:set ts=<args> sw=<args> expandtab
+command -nargs=1 COL set colorcolumn=<args>
+command EIGHTY set colorcolumn=80
+
+let g:go_fmt_command="goimports"
+"let g:go_fmt_command="goreturns"
+let g:go_highlight_functions = 1
+let g:go_highlight_methods = 1
+let g:go_highlight_structs = 1
+
+let g:airline_powerline_fonts = 1
+let g:airline_theme = 'simple'
+let g:airline#extensions#virtualenv#enabled = 1
+
+let g:virtualenv_auto_activate = 0
+
+"augroup vimrc_autocmds
+"    autocmd!
+"    autocmd FileType python highlight Excess ctermbg=DarkGrey guibg=Black
+"    autocmd FileType python match Excess /\%80v.*/
+"    autocmd FileType python set nowrap
+"augroup END
+
+"autocmd FileType go autocmd BufWritePre <buffer> Fmt
+au BufNewFile,BufRead *.j2 set filetype=htmljinja
+
+nmap <F8> :TagbarToggle<CR>
+let g:tagbar_ctags_bin = '/usr/local/bin/ctags'
+nmap <silent> <A-Up> :wincmd k<CR>
+nmap <silent> <A-Down> :wincmd j<CR>
+nmap <silent> <A-Left> :wincmd h<CR>
+nmap <silent> <A-Right> :wincmd l<CR>
+
+nmap L /^.\{161,}$/<CR>
+nmap K :cal cursor(line('.'), 160)<CR>
+
+vnoremap < <gv
+vnoremap > >gv
+
+set ts=4
+set sw=4
+set expandtab
+set softtabstop=0
+set nosmarttab
+
+if has("autocmd")
+  " When editing a file, always jump to the last known cursor position.
+  " Don't do it when the position is invalid or when inside an event handler
+  " (happens when dropping a file on gvim).
+  autocmd BufReadPost *
+    \ if line("'\"") >= 1 && line("'\"") <= line("$") |
+    \   exe "normal! g`\"" |
+    \ endif
+endif
+
+function! SetupEnvironment()
+  let l:path = expand('%:p')
+  if l:path =~ '/Users/matt/projects/ansibledev'
+    if &filetype == 'python'
+      highlight Excess ctermbg=DarkGrey guibg=Black
+      match Excess /\%120v.*/
+      set nowrap
+    endif
+  else
+    if &filetype == 'python'
+      highlight Excess ctermbg=DarkGrey guibg=Black
+      match Excess /\%80v.*/
+      set nowrap
+    endif
+  endif
+endfunction
+autocmd BufReadPost,BufNewFile * call SetupEnvironment()

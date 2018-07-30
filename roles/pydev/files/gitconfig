@@ -1,0 +1,36 @@
+[github]
+	user = sivel
+[user]
+	name = Matt Martz
+	email = matt@sivel.net
+[color]
+	diff = auto
+	status = auto
+	branch = auto
+	ui = true
+[alias]
+	st = status
+	stat = status
+	co = checkout
+	b = branch
+	br = branch
+	copr = !sh -c 'git fetch upstream pull/$1/head:pr/$1 && git checkout pr/$1' -
+[push]
+	default = current
+[pull]
+	default = current
+[hub]
+	host = github.com
+[merge]
+	tool = opendiff
+[core]
+	quotepath = false
+	pager = less -+F -+X
+[filter "lfs"]
+	smudge = git-lfs smudge %f
+	required = true
+	clean = git-lfs clean %f
+[url "https://"]
+	insteadOf = http://
+[mergetool "opendiff"]
+	path = /Users/matt/bin/opendiff-w
