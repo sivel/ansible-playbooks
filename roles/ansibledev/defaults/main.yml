@@ -1,0 +1,6 @@
+ansibledev_venvs:
+  - python: 3.7.0
+    name: ansibledev
+  - python: 2.7.15
+    name: ansibledev2
+

@@ -26,16 +26,14 @@
     dest: ~/.pyenv
     force: yes
 
-- copy:
+- name: Place pyenv profile script
+  copy:
     src: pyenv.sh
     dest: ~/.profile.d/pyenv.sh
 
-- command: "pyenv install {{ item }}"
+- name: Install pyenv versions
+  shell: "source ~/.profile && pyenv install {{ item }}"
   args:
     creates: "/home/sivel/.pyenv/versions/{{ item }}"
-  loop:
-    - 2.7.14
-    - 3.6.5
-  environment:
-    PYENV_ROOT: "{{ ansible_env.HOME }}/.pyenv"
-    PATH: "{{ ansible_env.HOME }}/.pyenv/bin:{{ ansible_env.PATH }}"
+    executable: /bin/bash
+  loop: "{{ pyenv_versions }}"

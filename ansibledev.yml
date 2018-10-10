@@ -1,5 +1,5 @@
 ---
-- hosts: ath
+- hosts: ansibledev
   roles:
     - role: mosh
       tags:

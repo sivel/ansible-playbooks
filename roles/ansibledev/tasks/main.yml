@@ -6,22 +6,11 @@
     repo: git@github.com:sivel/ansible.git
     dest: ~/projects/ansibledev/ansible
     update: no
+    accept_hostkey: yes
 
-- shell: source .profile && mkvirtualenv -p ~/.pyenv/versions/3.6.5/bin/python -a ~/projects/ansibledev ansibledev
-  args:
-    creates: ~/venvs/ansibledev
-  register: ansibledev
-
-- shell: ~/venvs/ansibledev/bin/pip install -r ~/projects/ansibledev/ansible/requirements.txt -r ~/projects/ansibledev/ansible/test/runner/requirements/ansible-test.txt argcomplete
-  when: ansibledev is changed
-
-- shell: source .profile && mkvirtualenv -p ~/.pyenv/versions/2.7.14/bin/python -a ~/projects/ansibledev ansibledev2
-  args:
-    creates: ~/venvs/ansibledev2
-  register: ansibledev2
-
-- shell: ~/venvs/ansibledev/bin/pip install -r ~/projects/ansibledev/ansible/requirements.txt -r ~/projects/ansibledev/ansible/test/runner/requirements/ansible-test.txt argcomplete
-  when: ansibledev2 is changed
+- include_tasks:
+    file: venv.yml
+  loop: "{{ ansibledev_venvs }}"
 
 # - command: nohup docker pull -a ansible/ansible
 #   async: 3600

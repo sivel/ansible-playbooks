@@ -1,0 +1,8 @@
+- shell: source ~/.profile && mkvirtualenv -p ~/.pyenv/versions/{{ item.python }}/bin/python -a ~/projects/ansibledev {{ item.name }}
+  args:
+    creates: ~/venvs/{{ item.name }}
+    executable: /bin/bash
+  register: venv
+
+- shell: ~/venvs/{{ item.name }}/bin/pip install -r ~/projects/ansibledev/ansible/requirements.txt -r ~/projects/ansibledev/ansible/test/runner/requirements/ansible-test.txt argcomplete
+  when: venv is changed

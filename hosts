@@ -4,5 +4,11 @@ riogrande.sivel.net
 [locutus]
 locutus.sivel.net
 
-[ath]
-ath.sivel.net
+# [ath]
+# ath.sivel.net
+
+[discovery]
+discovery.sivel.net
+
+[ansibledev:children]
+discovery
