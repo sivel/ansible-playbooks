@@ -1,0 +1,8 @@
+- get_url:
+    url: "https://github.com/sivel/powerline-shell-go/releases/download/v1.1.0/powerline_shell_{{ ansible_system|lower }}_{{ _go_arch_map[ansible_userspace_architecture] }}"
+    dest: ~/bin/powerline_shell
+    mode: "0755"
+
+- copy:
+    src: powerline.sh
+    dest: ~/.profile.d/powerline.sh

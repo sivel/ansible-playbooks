@@ -24,3 +24,7 @@
     - role: ansibledev
       tags:
         - ansibledev
+
+    - role: powerline-shell
+      tags:
+        - powerline_shell
