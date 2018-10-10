@@ -1,0 +1,6 @@
+#!/bin/bash
+unset PYTHON_BIN
+. ${PROJECT_DIR}/ansible/hacking/env-setup -q
+if [ -n "$(which register-python-argcomplete || true)" ]; then
+    eval "$(register-python-argcomplete ansible-test)"
+fi

@@ -1,0 +1,11 @@
+#!/bin/bash
+# This hook is run before every virtualenv is activated.
+# argument: environment name
+
+if [ -e $VIRTUAL_ENV/.project ]; then
+    export PROJECT_DIR=`head -1 $VIRTUAL_ENV/.project`
+fi
+
+if [ -n "$PROJECT_DIR" ] && [ -e "${PROJECT_DIR}/.preactivate" ]; then
+    source "${PROJECT_DIR}/.preactivate"
+fi

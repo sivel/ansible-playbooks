@@ -1,16 +1,44 @@
-- file:
+- name: Create project dir
+  file:
     path: ~/projects/ansibledev
     state: directory
 
-- git:
+- name: Create playbooks dir
+  file:
+    path: ~/projects/ansibledev/playbooks
+    state: directory
+
+- name: Clone fork
+  git:
     repo: git@github.com:sivel/ansible.git
     dest: ~/projects/ansibledev/ansible
     update: no
     accept_hostkey: yes
+  register: ansible_git
+
+- name: Set and fetch upstream
+  shell: git remote add upstream git@github.com:ansible/ansible.git && git fetch --all
+  args:
+    chdir: ~/projects/ansibledev/ansible
+  when: ansible_git is changed
 
 - include_tasks:
     file: venv.yml
   loop: "{{ ansibledev_venvs }}"
+
+- name: Copy virtualenvwrapper activate scripts
+  copy:
+    src: "{{ item }}"
+    dest: "~/venvs/{{ item }}"
+    mode: "0755"
+  loop:
+    - preactivate
+    - postactivate
+
+- name: Copy custom project postactivate script
+  copy:
+    src: project_postactivate
+    dest: ~/projects/ansibledev/.postactivate
 
 # - command: nohup docker pull -a ansible/ansible
 #   async: 3600

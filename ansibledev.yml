@@ -28,3 +28,7 @@
     - role: powerline-shell
       tags:
         - powerline_shell
+
+    - role: bistory
+      tags:
+        - bistory

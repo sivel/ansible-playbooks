@@ -1,0 +1,13 @@
+#!/bin/bash
+# This hook is sourced after every virtualenv is activated.
+cd $VIRTUAL_ENV
+export OLDPYTHONPATH=$PYTHONPATH
+export PYTHONPATH=${VIRTUAL_ENV}/lib/python2.7/site-packages:${PYTHONPATH}
+if [ -e $VIRTUAL_ENV/.project ]; then
+    cdproject > /dev/null 2&>1
+    export PROJECT_DIR=`head -1 $VIRTUAL_ENV/.project`
+fi
+
+if [ -n "$PROJECT_DIR" ] && [ -e "${PROJECT_DIR}/.postactivate" ]; then
+    source "${PROJECT_DIR}/.postactivate"
+fi
