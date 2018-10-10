@@ -1,0 +1,15 @@
+- name: Install bistory
+  pip:
+    virtualenv: ~/.bistory
+    name: bistory
+
+- name: Symlink bistory
+  file:
+    src: ~/.bistory/bin/bistory
+    dest: ~/bin/bistory
+    state: link
+
+- name: Add profile script for bistory
+  copy:
+    src: bistory.sh
+    dest: ~/.profile.d/bistory.sh
