@@ -1,5 +1,5 @@
 ---
-- hosts: all
+- hosts: all:!esx
   become: true
   roles:
     - role: hostname

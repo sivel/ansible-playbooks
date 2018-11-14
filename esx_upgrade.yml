@@ -1,0 +1,70 @@
+- name: Upgrade ESXi server to new image profile
+  hosts: esx
+  gather_facts: false
+  vars_prompt:
+    - name: esxi_profile
+      prompt: "ESXi image profile"
+      private: no
+  tasks:
+    - name: List running vms
+      command: esxcli vm process list
+      register: process_list
+      changed_when: false
+
+    - name: Power off VMs
+      command: "esxcli vm process kill --type=soft --world-id={{ item }}"
+      loop: "{{ process_list.stdout_lines|select('search', 'World ID')|map('replace', '   World ID: ', '')|list }}"
+
+    - name: Put server into maintenance mode
+      command: esxcli system maintenanceMode set --enable true
+      register: maintenance_mode
+      failed_when: maintenance_mode.rc != 0 and maintenance_mode.stdout != 'Maintenance mode is already enabled.'
+      changed_when: maintenance_mode.rc == 0
+
+    - name: Upgrade host
+      command: 'esxcli software profile update -p {{ esxi_profile }} -d https://hostupdate.vmware.com/software/VUM/PRODUCTION/main/vmw-depot-index.xml'
+      register: update
+      changed_when: '"Host is not changed." not in update.stdout'
+
+    - set_fact:
+        reboot_required: '"Reboot Required: true" in update.stdout'
+
+    - name: Reboot host
+      shell: reboot && sleep 0
+      when: reboot_required
+      register: reboot
+
+    - name: Wait for reboot
+      wait_for_connection:
+        delay: 60
+      when: reboot is changed
+
+    - name: Remove PublicSwitch0
+      command: esxcli network vswitch standard remove -v PublicSwitch0
+      when: reboot_required
+
+    - name: Add PublicSwitch0
+      command: esxcli network vswitch standard add -v PublicSwitch0
+      when: reboot_required
+
+    - name: Add vmnic32 uplink to PublicSwitch0
+      command: esxcli network vswitch standard uplink add -u vmnic32 -v PublicSwitch0
+      when: reboot_required
+
+    - name: Add Public Network portgroup
+      command: esxcli network vswitch standard portgroup add -p "Public Network" -v PublicSwitch0
+      when: reboot_required
+
+    - name: Disable maintenance mode
+      command: esxcli system maintenanceMode set --enable false
+      when: reboot_required
+
+    - name: List all VMs
+      command: vim-cmd vmsvc/getallvms
+      register: all_vms
+
+    - name: Power on VMs
+      command: "vim-cmd vmsvc/power.on {{ item.split()|first }}"
+      loop: "{{ all_vms.stdout_lines[1:] }}"
+      loop_control:
+        label: "{{ item.split()|first }}"

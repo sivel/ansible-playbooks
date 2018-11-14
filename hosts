@@ -12,3 +12,6 @@ discovery.sivel.net
 
 [ansibledev:children]
 discovery
+
+[esx]
+esx.sivel.net ansible_user=root
