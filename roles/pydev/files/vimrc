@@ -116,7 +116,7 @@ endif
 
 function! SetupEnvironment()
   let l:path = expand('%:p')
-  if l:path =~ '/Users/matt/projects/ansibledev'
+  if l:path =~ '/home/sivel/projects/ansibledev'
     if &filetype == 'python'
       highlight Excess ctermbg=DarkGrey guibg=Black
       match Excess /\%120v.*/
