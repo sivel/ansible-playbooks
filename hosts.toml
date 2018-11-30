@@ -1,0 +1,16 @@
+[ansibledev]
+children = [
+    "discovery",
+]
+
+[discovery.hosts]
+"discovery.sivel.net" = {}
+
+[esx.hosts]
+"esx.sivel.net" = { ansible_user = "root", ansible_remote_tmp = "/tmp" }
+
+[locutus.hosts]
+"locutus.sivel.net" = {}
+
+[riogrande.hosts]
+"riogrande.sivel.net" = {}
