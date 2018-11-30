@@ -25,6 +25,29 @@
       command: 'esxcli software profile update -p {{ esxi_profile }} -d https://hostupdate.vmware.com/software/VUM/PRODUCTION/main/vmw-depot-index.xml'
       register: update
       changed_when: '"Host is not changed." not in update.stdout'
+      ignore_errors: true
+
+    - when: update is failed
+      block:
+        - set_fact:
+            failed_vibs: "{{ (update.stdout_lines|select('contains', 'vibs =')|list|first|replace('vibs =', '')|trim).split() }}"
+
+        - name: Fetch failed vibs
+          get_url:
+            url: "http://hostupdate.vmware.com/software/VUM/PRODUCTION/main/esx/vmw/vib20/tools-light/{{ item }}.vib"
+            dest: "/tmp/{{ item }}.vib"
+          loop: "{{ failed_vibs }}"
+
+        - name: Install failed vibs
+          command: "esxcli software vib install -f -v /tmp/{{ item }}.vib"
+          args:
+            chdir: /tmp
+          loop: "{{ failed_vibs }}"
+
+        - name: Upgrade host
+          command: 'esxcli software profile update -p {{ esxi_profile }} -d https://hostupdate.vmware.com/software/VUM/PRODUCTION/main/vmw-depot-index.xml'
+          register: update
+          changed_when: '"Host is not changed." not in update.stdout'
 
     - set_fact:
         reboot_required: '"Reboot Required: true" in update.stdout'
@@ -38,6 +61,10 @@
       wait_for_connection:
         delay: 60
       when: reboot is changed
+
+    - name: Pause for good measure
+      pause:
+        seconds: 30
 
     - name: Remove PublicSwitch0
       command: esxcli network vswitch standard remove -v PublicSwitch0

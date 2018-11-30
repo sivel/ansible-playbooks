@@ -14,4 +14,4 @@ discovery.sivel.net
 discovery
 
 [esx]
-esx.sivel.net ansible_user=root
+esx.sivel.net ansible_user=root ansible_remote_tmp=/tmp
