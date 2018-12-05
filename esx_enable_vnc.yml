@@ -1,0 +1,31 @@
+- name: Enable VNC on an ESXi server to support packer builds
+  hosts: esx
+  gather_facts: false
+  tasks:
+    - name: Set temp perms on service.xml
+      file:
+        path: /etc/vmware/firewall/service.xml
+        mode: "0644"
+        attributes: +t
+
+    - name: Add packer-vnc service
+      blockinfile:
+        path: /etc/vmware/firewall/service.xml
+        marker: "  <!-- {mark} packer-vnc -->"
+        content: "{{ lookup('file', 'files/esx/vnc.xml') }}"
+        insertbefore: '</ConfigRoot>'
+      register: add_vnc
+
+    - name: Set temp perms on service.xml
+      file:
+        path: /etc/vmware/firewall/service.xml
+        mode: "0444"
+        attributes: +t
+
+    - name: Refresh firewall
+      command: esxcli network firewall refresh
+      when: add_vnc is changed
+
+    - name: Backup
+      command: /sbin/backup.sh 1
+      when: add_vnc is changed
