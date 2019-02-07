@@ -1,3 +1,5 @@
+# esxcli software sources profile list --depot=https://hostupdate.vmware.com/software/VUM/PRODUCTION/main/vmw-depot-index.xml
+
 - name: Upgrade ESXi server to new image profile
   hosts: esx
   gather_facts: false
@@ -49,42 +51,37 @@
           register: update
           changed_when: '"Host is not changed." not in update.stdout'
 
-    - set_fact:
-        reboot_required: '"Reboot Required: true" in update.stdout'
+        - set_fact:
+            reboot_required: '{{ "Reboot Required: true" in update.stdout }}'
 
-    - name: Reboot host
-      shell: reboot && sleep 0
-      when: reboot_required
-      register: reboot
+    - when: reboot_required|bool
+      block:
+        - name: Reboot host
+          shell: reboot && sleep 0
+          register: reboot
 
-    - name: Wait for reboot
-      wait_for_connection:
-        delay: 60
-      when: reboot is changed
+        - name: Wait for reboot
+          wait_for_connection:
+            delay: 60
 
-    - name: Pause for good measure
-      pause:
-        seconds: 30
+        - name: Pause for good measure
+          pause:
+            seconds: 30
 
-    - name: Remove PublicSwitch0
-      command: esxcli network vswitch standard remove -v PublicSwitch0
-      when: reboot_required
+        - name: Remove PublicSwitch0
+          command: esxcli network vswitch standard remove -v PublicSwitch0
 
-    - name: Add PublicSwitch0
-      command: esxcli network vswitch standard add -v PublicSwitch0
-      when: reboot_required
+        - name: Add PublicSwitch0
+          command: esxcli network vswitch standard add -v PublicSwitch0
 
-    - name: Add vmnic32 uplink to PublicSwitch0
-      command: esxcli network vswitch standard uplink add -u vmnic32 -v PublicSwitch0
-      when: reboot_required
+        - name: Add vmnic32 uplink to PublicSwitch0
+          command: esxcli network vswitch standard uplink add -u vmnic32 -v PublicSwitch0
 
-    - name: Add Public Network portgroup
-      command: esxcli network vswitch standard portgroup add -p "Public Network" -v PublicSwitch0
-      when: reboot_required
+        - name: Add Public Network portgroup
+          command: esxcli network vswitch standard portgroup add -p "Public Network" -v PublicSwitch0
 
-    - name: Disable maintenance mode
-      command: esxcli system maintenanceMode set --enable false
-      when: reboot_required
+        - name: Disable maintenance mode
+          command: esxcli system maintenanceMode set --enable false
 
     - name: List all VMs
       command: vim-cmd vmsvc/getallvms
