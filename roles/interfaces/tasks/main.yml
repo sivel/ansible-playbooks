@@ -7,6 +7,13 @@
     group: root
     mode: 0644
 
+- file:
+    path: /etc/network/interfaces.d
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
 - copy:
     src: lo
     dest: /etc/network/interfaces.d/lo.cfg
@@ -20,7 +27,7 @@
     owner: root
     group: root
     mode: 0644
-  when: not eth0_static
+  when: not eth0_static|bool
 
 - template:
     src: eth0-static.j2
@@ -28,4 +35,4 @@
     owner: root
     group: root
     mode: 0644
-  when: eth0_static
+  when: eth0_static|bool

@@ -13,9 +13,8 @@
   apt:
     name:
       - git
-      - python-pip
-      - software-properties-common
-      - python-software-properties
+      - python3
+      - python3-pip
       - vim-nox
       - ntp
       - screen
