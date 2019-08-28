@@ -3,6 +3,9 @@ children = [
     "discovery",
 ]
 
+[ansibledev.hosts]
+"sivel.eng.ansible.com" = {}
+
 [discovery.hosts]
 "discovery.sivel.net" = {}
 

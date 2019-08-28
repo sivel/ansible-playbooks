@@ -37,3 +37,8 @@
     creates: "/home/sivel/.pyenv/versions/{{ item }}"
     executable: /bin/bash
   loop: "{{ pyenv_versions }}"
+
+- name: Set pyenv global
+  shell: "source ~/.profile && pyenv global {{ pyenv_versions|sort(reverse=True)|join(' ') }}"
+  args:
+    executable: /bin/bash
