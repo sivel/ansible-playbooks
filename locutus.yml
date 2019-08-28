@@ -1,17 +1,23 @@
 ---
 - hosts: locutus
-  roles:
-    - role: caddy
-      caddyfile: "{{ inventory_dir }}/files/locutus/Caddyfile"
+  tasks:
+    - import_role:
+        role:
+          name: caddy
+          caddyfile: "{{ playbook_dir }}/files/locutus/Caddyfile"
       become: true
       tags:
         - caddy
 
-    - role: weechat
+    - import_role:
+        role:
+          name: weechat
       tags:
         - weechat
 
-    - role: mosh
+    - import_role:
+        role:
+          name: mosh
+      become: true
       tags:
         - mosh
-      become: true

@@ -13,4 +13,4 @@ children = [
 "locutus.sivel.net" = {}
 
 [riogrande.hosts]
-"riogrande.sivel.net" = {}
+"riogrande.sivel.net" = { ansible_host = "18.188.88.174" }

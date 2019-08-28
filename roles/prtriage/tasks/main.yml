@@ -42,4 +42,4 @@
   cron:
     name: "pr-triage"
     job: 'cd /var/www/pr-triage/ && /var/www/pr-triage/venv/bin/python /var/www/pr-triage/triage.py >> /var/www/pr-triage/triage.log 2>&1'
-    minute: 30
+    minute: '30'

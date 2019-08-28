@@ -1,34 +1,48 @@
 ---
 - hosts: ansibledev
   roles:
-    - role: mosh
+    - import_role:
+        role:
+          name: mosh
       tags:
         - mosh
       become: true
 
-    - role: docker
-      docker_users:
-        - sivel
+    - import_role:
+        role:
+          name: docker
+          docker_users:
+            - sivel
       tags:
         - docker
       become: true
 
-    - role: pydev
+    - import_role:
+        role:
+          name: pydev
       tags:
         - pydev
 
-    - role: pyenv
+    - import_role:
+        role:
+          name: pyenv
       tags:
         - pyenv
 
-    - role: ansibledev
+    - import_role:
+        role:
+          name: ansibledev
       tags:
         - ansibledev
 
-    - role: powerline-shell
+    - import_role:
+        role:
+          name: powerline-shell
       tags:
         - powerline_shell
 
-    - role: bistory
+    - import_role:
+        role:
+          name: bistory
       tags:
         - bistory
