@@ -1,6 +1,6 @@
 ---
 - hosts: ansibledev
-  roles:
+  tasks:
     - import_role:
         role:
           name: mosh
@@ -46,3 +46,11 @@
           name: bistory
       tags:
         - bistory
+
+    - import_role:
+        role:
+          name: caddy
+          caddyfile: "{{ playbook_dir }}/files/ansibledev/Caddyfile"
+      become: true
+      tags:
+        - caddy
