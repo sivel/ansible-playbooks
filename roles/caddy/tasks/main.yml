@@ -18,7 +18,7 @@
     caddy_installed_version: "0"
   when: caddy_version_output is failed
 
-- when: install_caddy|bool or caddy_installed_version is not version(caddy_version, 'eq')
+- when: install_caddy|bool or caddy_installed_version is not version(caddy_version|string, 'eq')
   block:
     - name: Fetch caddy
       get_url:
