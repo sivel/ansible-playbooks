@@ -6,7 +6,7 @@
   register: venv
 
 - name: Install python deps
-  shell: ~/venvs/{{ item.name }}/bin/pip install -r {{ ansible_path }}/requirements.txt -r {{ ansible_path }}/test/runner/requirements/ansible-test.txt argcomplete q
+  shell: ~/venvs/{{ item.name }}/bin/pip install -r {{ ansible_path }}/requirements.txt argcomplete
   vars:
     ansible_path: "~/projects/ansibledev/ansible"
   when: venv is changed
