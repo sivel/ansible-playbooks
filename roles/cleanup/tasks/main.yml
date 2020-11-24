@@ -5,40 +5,21 @@
     force: yes
     state: absent
 
-- getent:
-    database: passwd
-    key: ubuntu
-    fail_key: false
+- name: Remove unwanted users
+  user:
+    name: '{{ item }}'
+    state: absent
+    remove: yes
+  loop:
+    - ubuntu
+    - vagrant
+    - pi
 
-- when: getent_passwd.ubuntu|default(False)
-  block:
-    - name: Disable the ubuntu user
-      user:
-        name: ubuntu
-        password: "!"
-        shell: /usr/sbin/nologin
-
-    - name: Remove the ubuntu users ssh key
-      file:
-        path: /home/ubuntu/.ssh/authorized_keys
-        force: yes
-        state: absent
-
-- getent:
-    database: passwd
-    key: vagrant
-    fail_key: false
-
-- when: getent_passwd.vagrant|default(False)
-  block:
-    - name: Disable the vagrant user
-      user:
-        name: vagrant
-        password: "!"
-        shell: /usr/sbin/nologin
-
-    - name: Remove the vagrant users ssh key
-      file:
-        path: /home/vagrant/.ssh/authorized_keys
-        force: yes
-        state: absent
+- name: Remove various bento files
+  file:
+    path: '{{ item }}'
+    state: absent
+    force: yes
+  loop:
+    - /etc/sudoers.d/99_vagrant
+    - /etc/update-motd.d/99-bento
