@@ -8,14 +8,18 @@
         - mosh
       become: true
 
-    - import_role:
+    - include_role:
         role:
           name: docker
           docker_users:
             - sivel
+        apply:
+          become: true
+          tags:
+            - docker
       tags:
         - docker
-      become: true
+      when: docker|default(True)|bool
 
     - import_role:
         role:
