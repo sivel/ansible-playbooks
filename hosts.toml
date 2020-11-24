@@ -1,19 +1,38 @@
 [ansibledev]
 children = [
     "discovery",
+    "porky",
+]
+
+[noc]
+children = [
+    "porky",
+    "vpn",
+    "zero",
 ]
 
 [ansibledev.hosts]
-"sivel.eng.ansible.com" = {}
-
-[discovery.hosts]
-"discovery.sivel.net" = {}
-
-[esx.hosts]
-"esx.sivel.net" = { ansible_user = "root", ansible_remote_tmp = "/tmp" }
+"sivel.eng.ansible.com" = { skip_docker_install = true }
 
 [locutus.hosts]
 "locutus.sivel.net" = {}
 
 [riogrande.hosts]
 "riogrande.sivel.net" = { ansible_host = "18.188.88.174" }
+
+[porky.hosts."porky.noc.sivel.net"]
+skip_docker_install = true
+docker = false
+proxmox = true
+
+[wireguard]
+children = [
+    "vpn",
+    "zero",
+]
+
+[vpn.hosts]
+"vpn.noc.sivel.net" = { proxmox = true }
+
+[zero.hosts]
+"zero.noc.sivel.net" = {}
