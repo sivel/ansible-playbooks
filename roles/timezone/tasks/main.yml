@@ -1,4 +1,4 @@
 ---
 - name: set timezone to America/Chicago
-  timezone:
+  community.general.timezone:
     name: America/Chicago

@@ -25,7 +25,7 @@
     label: "{{ item.name }}"
 
 - name: Add Authorized Keys
-  authorized_key:
+  ansible.posix.authorized_key:
     user: "{{ item.0.name }}"
     key: "{{ item.1 }}"
     state: present
