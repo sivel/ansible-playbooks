@@ -1,0 +1,5 @@
+- name: restart wireguard {{ wireguard_interface }}
+  systemd:
+    name: wg-quick@{{ wireguard_interface }}
+    state: restarted
+  when: wiregaurd_systemd_unit is not changed

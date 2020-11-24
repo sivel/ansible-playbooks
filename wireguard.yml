@@ -1,0 +1,23 @@
+- hosts: wireguard
+  gather_subset:
+    - network
+  tags:
+    - wireguard
+  tasks:
+    - import_role:
+        role:
+          name: wireguard
+          wireguard_users:
+            - sivel
+          wireguard_endpoint_host: ipv4.noc.sivel.net
+      become: true
+      tags:
+        - wireguard_setup
+
+    - import_role:
+        role:
+          name: wireguard
+        tasks_from: qr.yml
+      become: true
+      tags:
+        - wireguard_qr

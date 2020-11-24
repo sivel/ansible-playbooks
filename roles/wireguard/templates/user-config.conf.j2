@@ -1,0 +1,6 @@
+
+[Peer]
+# {{ wireguard_user }}
+PublicKey = {{ wireguard_user_public_key.content|b64decode|trim }}
+PresharedKey = {{ wireguard_user_preshared_key.content|b64decode|trim }}
+AllowedIPs = {{ wireguard_network|format(wireguard_user_index + 2) }}/32

@@ -1,0 +1,79 @@
+- name: Install wireguard and qrencode
+  package:
+    state: latest
+    name:
+      - wireguard
+      - qrencode
+
+- name: Ensure wireguard directories exist
+  file:
+    path: /etc/wireguard/{{ item }}/{{ wireguard_interface }}
+    state: directory
+    mode: '0700'
+  loop:
+    - keys
+    - clients
+    - conf.d
+
+- name: Create server private key
+  shell: umask 0077; wg genkey > /etc/wireguard/keys/{{ wireguard_interface }}/server.key
+  args:
+    creates: /etc/wireguard/keys/{{ wireguard_interface }}/server.key
+
+- name: Read server private key
+  slurp:
+    path: /etc/wireguard/keys/{{ wireguard_interface }}/server.key
+  register: wireguard_server_private_key
+  no_log: true
+
+- name: Create server public key
+  shell: umask 0077; wg pubkey < {{ private_key }} > {{ public_key }}
+  args:
+    creates: /etc/wireguard/keys/{{ wireguard_interface }}/server.pub
+  vars:
+    private_key: /etc/wireguard/keys/{{ wireguard_interface }}/server.key
+    public_key: /etc/wireguard/keys/{{ wireguard_interface }}/server.pub
+
+- name: Read server public key
+  slurp:
+    path: /etc/wireguard/keys/{{ wireguard_interface }}/server.pub
+  register: wireguard_server_public_key
+
+- name: Template wireguard interface stub
+  template:
+    src: interface.conf.j2
+    dest: /etc/wireguard/conf.d/{{ wireguard_interface }}/0-interface.conf
+    mode: '0600'
+
+- name: Create users
+  include_tasks: create_user.yml
+  loop: '{{ wireguard_users }}'
+  loop_control:
+    loop_var: wireguard_user
+    index_var: wireguard_user_index
+
+- name: Assemble interface file
+  assemble:
+    src: /etc/wireguard/conf.d/{{ wireguard_interface }}
+    dest: /etc/wireguard/{{ wireguard_interface }}.conf
+    mode: '0600'
+  notify:
+    - restart wireguard {{ wireguard_interface }}
+
+- name: Enable ip_forward
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: yes
+    sysctl_file: /etc/sysctl.d/99-sysctl.conf
+
+- name: Enable systemd unit
+  systemd:
+    name: wg-quick@{{ wireguard_interface }}
+    enabled: true
+
+- name: Start systemd unit
+  systemd:
+    name: wg-quick@{{ wireguard_interface }}
+    state: started
+  register: wiregaurd_systemd_unit

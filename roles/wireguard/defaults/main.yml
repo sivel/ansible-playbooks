@@ -1,0 +1,14 @@
+wireguard_server_interface: '{{ ansible_default_ipv4.interface }}'
+wireguard_forward: true
+wireguard_network: '10.6.0.%s'
+wireguard_cidr: 24
+wireguard_port: 51820
+wireguard_interface: wg0
+wireguard_users: []
+wireguard_dns:
+  - 1.1.1.1
+  - 1.0.0.1
+wireguard_endpoint_host: '{{ ansible_default_ipv4.address }}'
+wireguard_allowed_ips:
+  - 0.0.0.0/0
+  - ::/0

@@ -1,0 +1,19 @@
+- name: Ensure local wireguard_qr dir exists
+  file:
+    path: '{{ playbook_dir }}/wireguard_qr/{{ inventory_hostname }}/{{ wireguard_interface }}'
+    state: directory
+  delegate_to: localhost
+  become: false
+
+- name: Find QR code files
+  find:
+    paths: /etc/wireguard/clients/{{ wireguard_interface }}
+    patterns: '*.png'
+  register: wireguard_clients
+
+- name: Fetch QR code files
+  fetch:
+    src: '{{ item.path }}'
+    dest: '{{ playbook_dir }}/wireguard_qr/{{ inventory_hostname }}/{{ wireguard_interface }}/{{ item.path|basename }}'
+    flat: true
+  loop: '{{ wireguard_clients.files }}'

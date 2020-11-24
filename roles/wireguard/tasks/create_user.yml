@@ -1,0 +1,54 @@
+- name: '{{ wireguard_user }} | Create private key'
+  shell: umask 0077; wg genkey > /etc/wireguard/keys/{{ wireguard_interface }}/{{ wireguard_user }}.key
+  args:
+    creates: /etc/wireguard/keys/{{ wireguard_interface }}/{{ wireguard_user }}.key
+
+- name: '{{ wireguard_user }} | Read private key'
+  slurp:
+    path: /etc/wireguard/keys/{{ wireguard_interface }}/{{ wireguard_user }}.key
+  register: wireguard_user_private_key
+  no_log: true
+
+- name: '{{ wireguard_user }} | Create public key'
+  shell: umask 0077; wg pubkey < {{ private_key }} > {{ public_key }}
+  args:
+    creates: /etc/wireguard/keys/{{ wireguard_interface }}/{{ wireguard_user }}.pub
+  vars:
+    private_key: /etc/wireguard/keys/{{ wireguard_interface }}/{{ wireguard_user }}.key
+    public_key: /etc/wireguard/keys/{{ wireguard_interface }}/{{ wireguard_user }}.pub
+
+- name: '{{ wireguard_user }} | Read public key'
+  slurp:
+    path: /etc/wireguard/keys/{{ wireguard_interface }}/{{ wireguard_user }}.pub
+  register: wireguard_user_public_key
+
+- name: '{{ wireguard_user }} | Create pre-shared key'
+  shell: umask 0077; wg genkey > /etc/wireguard/keys/{{ wireguard_interface }}/{{ wireguard_user }}.psk
+  args:
+    creates: /etc/wireguard/keys/{{ wireguard_interface }}/{{ wireguard_user }}.psk
+
+- name: '{{ wireguard_user }} | Read pre-shared key'
+  slurp:
+    path: /etc/wireguard/keys/{{ wireguard_interface }}/{{ wireguard_user }}.psk
+  register: wireguard_user_preshared_key
+  no_log: true
+
+- name: '{{ wireguard_user }} | Create client config'
+  template:
+    src: client.conf.j2
+    dest: /etc/wireguard/clients/{{ wireguard_interface }}/{{ wireguard_user }}.conf
+    mode: '0600'
+
+- name: '{{ wireguard_user }} | Create config stub'
+  template:
+    src: user-config.conf.j2
+    dest: /etc/wireguard/conf.d/{{ wireguard_interface }}/{{ wireguard_user }}.conf
+    mode: '0600'
+
+- name: '{{ wireguard_user }} | Create QR code'
+  shell: umask 0077; qrencode -r {{ conf }} -t PNG -o {{ png }}
+  args:
+    creates: /etc/wireguard/clients/{{ wireguard_interface }}/{{ wireguard_user }}.png
+  vars:
+    conf: /etc/wireguard/clients/{{ wireguard_interface }}/{{ wireguard_user }}.conf
+    png: /etc/wireguard/clients/{{ wireguard_interface }}/{{ wireguard_user }}.png

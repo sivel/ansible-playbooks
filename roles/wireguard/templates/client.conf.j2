@@ -1,0 +1,10 @@
+[Interface]
+Address = {{ wireguard_network|format(wireguard_user_index + 2) }}/32
+PrivateKey = {{ wireguard_user_private_key.content|b64decode|trim }}
+DNS = {{ wireguard_dns|join(', ') }}
+
+[Peer]
+PublicKey = {{ wireguard_server_public_key.content|b64decode|trim }}
+PresharedKey = {{ wireguard_user_preshared_key.content|b64decode|trim }}
+Endpoint = {{ wireguard_endpoint_host }}:{{ wireguard_port }}
+AllowedIPs = {{ wireguard_allowed_ips|join(', ') }}
