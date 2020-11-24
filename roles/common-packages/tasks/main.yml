@@ -7,6 +7,8 @@
       - update-notifier-common
       - ubuntu-release-upgrader-core
       - resolvconf
+      - python2
+      - python
     state: absent
 
 - name: Install common packages
@@ -29,7 +31,7 @@
     enabled: yes
 
 - name: Set vim-nox as the default editor
-  alternatives:
+  community.general.alternatives:
     name: editor
     path: /usr/bin/vim.nox
 
