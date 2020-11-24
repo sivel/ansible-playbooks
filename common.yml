@@ -2,6 +2,11 @@
 - hosts: all:!esx
   become: true
   tasks:
+    - include_role:
+        role:
+          name: qemu
+      when: proxmox|default(False)
+
     - import_role:
         role:
           name: hostname

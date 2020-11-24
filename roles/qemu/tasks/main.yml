@@ -1,0 +1,13 @@
+- package:
+    name: qemu-guest-agent
+    update_cache: yes
+    cache_valid_time: 86400
+  register: qemu_quest_agent
+
+- systemd:
+    name: qemu-guest-agent
+    enabled: true
+    state: started
+
+- reboot:
+  when: qemu_quest_agent is changed
