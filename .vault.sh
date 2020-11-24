@@ -1,2 +1,2 @@
 #!/bin/bash
-./pex/keyring.pex ./contrib/vault-keyring-client.py
+./shiv/keyring.pyz ./contrib/vault-keyring-client.py
