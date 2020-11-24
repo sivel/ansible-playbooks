@@ -36,3 +36,11 @@ children = [
 
 [zero.hosts]
 "zero.noc.sivel.net" = {}
+
+[vivo.hosts]
+"vivo.noc.sivel.net" = {}
+
+[unmanaged]
+children = [
+    "vivo",
+]

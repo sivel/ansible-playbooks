@@ -1,5 +1,5 @@
 - name: Bootstrap hosts
-  hosts: all
+  hosts: all:!unmanaged
   gather_facts: false
   tags:
     - bootstrap

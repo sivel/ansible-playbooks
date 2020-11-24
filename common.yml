@@ -1,5 +1,5 @@
 ---
-- hosts: all:!esx
+- hosts: all:!unmanaged
   become: true
   tasks:
     - include_role:
