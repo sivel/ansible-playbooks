@@ -21,5 +21,7 @@
     state: absent
     force: yes
   loop:
+    - /etc/sudoers.d/vagrant
     - /etc/sudoers.d/99_vagrant
     - /etc/update-motd.d/99-bento
+    - /etc/polkit-1/rules.d/49-vagrant.rules
