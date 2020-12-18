@@ -1,18 +1,20 @@
 - hosts: vivo
   gather_facts: false
   tasks:
-    - find:
-        paths: /mnt/data/bento/builds
+    - name: Locate all build images
+      find:
+        paths: /mnt/data/robox/output
         recurse: yes
         patterns: '*.qcow2'
       register: qcow2
 
-    - add_host:
+    - name: Create hosts that represent images
+      add_host:
         name: '{{ name }}'
         qcow2: '{{ item.path }}'
         groups:
           - templates
-      loop: '{{ qcow2.files }}'
+      loop: '{{ qcow2.files|sort(attribute="path") }}'
       loop_control:
         label: '{{ name }}'
       vars:
@@ -20,54 +22,42 @@
 
 - hosts: localhost
   gather_facts: false
-  vars_prompt:
-    - name: password
-      prompt: Proxmox password
   tasks:
-    - uri:
-        url: https://vivo.noc.sivel.net:8006/api2/json/access/ticket
-        validate_certs: false
-        method: POST
-        body:
-          username: root@pam
-          password: '{{ password }}'
-        body_format: form-urlencoded
-      no_log: true
-      register: ticket
-      delegate_to: localhost
-      run_once: true
-
     - module_defaults:
         uri:
           headers:
-            cookie: "PVEAuthCookie={{ ticket.json.data.ticket }}"
-            CSRFPreventionToken: '{{ ticket.json.data.CSRFPreventionToken }}'
+            Authorization: 'PVEAPIToken={{ pve_api_token }}'
           validate_certs: false
       block:
-        - uri:
+        - name: Fetch list of existing proxmox VMs
+          uri:
             url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu
           register: vms
           delegate_to: localhost
           run_once: true
 
-        - set_fact:
+        - name: Add vmid to existing images
+          set_fact:
             vmid: '{{ (vms.json.data|selectattr("name", "eq", item)|default([{"vmid": omit}], true)|first)["vmid"] }}'
           loop: '{{ groups.templates }}'
           delegate_to: '{{ item }}'
           delegate_facts: true
 
-        - set_fact:
+        - name: Determine which images are not yet deployed to proxmox
+          set_fact:
             missing: '{{ hostvars|dictsort|selectattr("0", "in", groups.templates)|selectattr("1.vmid", "undefined")|map(attribute="0")|sort }}'
-            existing: '{{ vms.json.data|map(attribute="vmid")|map("int") }}'
+            existing: '{{ vms.json.data|map(attribute="vmid")|map("int")|sort }}'
           run_once: true
 
-        - set_fact:
+        - name: Create mapping for missing images to associate unused vmids
+          set_fact:
             id_map: '{{ dict(missing|sort|zip(pool)) }}'
           vars:
             pool: '{{ range(101, 1000)|list|difference(existing)|sort }}'
           run_once: true
 
-        - add_host:
+        - name: Create hosts that represent missing images
+          add_host:
             name: '{{ item }}'
             vmid: '{{ id_map[item] }}'
             groups:
@@ -79,11 +69,12 @@
   module_defaults:
     uri:
       headers:
-        cookie: "PVEAuthCookie={{ hostvars.localhost.ticket.json.data.ticket }}"
-        CSRFPreventionToken: '{{ hostvars.localhost.ticket.json.data.CSRFPreventionToken }}'
+        Authorization: 'PVEAPIToken={{ pve_api_token }}'
       validate_certs: false
+  serial: 1
   tasks:
-    - uri:
+    - name: Create VM
+      uri:
         url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu
         method: POST
         body:
@@ -97,27 +88,37 @@
           agent: 'enabled=1'
         body_format: form-urlencoded
       delegate_to: localhost
-      throttle: 2
       changed_when: true
 
-    - command: qm importdisk {{ vmid }} {{ qcow2 }} data2
+    - name: Import image into VM
+      command: qm importdisk {{ vmid }} {{ qcow2 }} data2
       become: true
       delegate_to: vivo
-      throttle: 1
 
     - delegate_to: localhost
       block:
-        - uri:
+        - name: Reconfigure VM to utilize newly imported disk
+          uri:
             url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ vmid }}/config
             method: PUT
             body:
               scsi0: 'data2:vm-{{ vmid }}-disk-0,size=64G'
-              bootdisk: scsi0
             body_format: form-urlencoded
           changed_when: true
 
-        - uri:
+        # This cannot unfortunately be done in the above task, as we get a validation error
+        # that scsi0 does not yet exist
+        - name: Reconfigure VM to boot from new disk
+          uri:
+            url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ vmid }}/config
+            method: PUT
+            body:
+              boot: order=scsi0
+            body_format: form-urlencoded
+          changed_when: true
+
+        - name: Convert VM to template
+          uri:
             url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ vmid }}/template
             method: POST
-          delegate_to: localhost
           changed_when: true
