@@ -28,7 +28,6 @@ proxmox = true
 [wireguard]
 children = [
     "vpn",
-    "zero",
 ]
 
 [vpn.hosts]
@@ -40,7 +39,14 @@ children = [
 [vivo.hosts]
 "vivo.noc.sivel.net" = {}
 
+[binars.hosts]
+"binars.noc.sivel.net" = {}
+
+[nas.hosts]
+"nas.noc.sivel.net" = { ansible_python_interpreter = "/usr/local/bin/python3", ansible_scp_if_ssh = true }
+
 [unmanaged]
 children = [
     "vivo",
+    "nas",
 ]
