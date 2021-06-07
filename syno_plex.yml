@@ -1,0 +1,57 @@
+- hosts: nas
+  gather_facts: false
+  environment:
+    PATH: /sbin:/bin:/usr/sbin:/usr/bin:/usr/syno/sbin:/usr/syno/bin:/usr/local/sbin:/usr/local/bin
+  tasks:
+    - name: Get Plex Media Server Version
+      command: synopkg version "Plex Media Server"
+      register: plex_version_output
+      become: true
+
+    - name: Slurp the Plex Preferences.xml file
+      slurp:
+        path: /volume1/Plex/Library/Application Support/Plex Media Server/Preferences.xml
+      register: plex_preferences
+
+    - name: Extract PlexOnlineToken
+      set_fact:
+        plex_token: >-
+          {{ plex_preferences.content|b64decode|regex_findall('PlexOnlineToken="([^"]+)"')|first }}
+
+    - name: Fetch Plex Pass download list
+      uri:
+        url: https://plex.tv/api/downloads/5.json?channel=plexpass&X-Plex-Token={{ plex_token }}
+      register: plex_downloads
+      delegate_to: localhost
+
+    - name: Set plex version facts
+      set_fact:
+        plex_installed_version: '{{ plex_version_output.stdout_lines.0.split("-")|first }}'
+        plex_release: '{{ plex_downloads.json.nas.Synology.releases|selectattr("build", "eq", "linux-x86_64")|first }}'
+        plex_version: '{{ plex_downloads.json.nas.Synology.version.split("-")|first }}'
+
+    - name: End if there is no upgrade
+      meta: end_play
+      when: plex_installed_version == plex_version
+
+    - name: Download updated release package
+      get_url:
+        url: '{{ plex_release.url }}'
+        dest: '/tmp/{{ plex_release.url|basename }}'
+      register: plex_download
+
+    - become: true
+      block:
+        - name: Stop Plex Media Server
+          command: synopkg stop "Plex Media Server"
+
+        - name: Install Plex Media Server
+          command: synopkg install {{ plex_download.dest }}
+
+        - name: Start Plex Media Server
+          command: synopkg start "Plex Media Server"
+
+    - name: Remove release package
+      file:
+        path: '{{ plex_download.dest }}'
+        state: absent
