@@ -17,3 +17,10 @@
     dest: '{{ playbook_dir }}/wireguard_qr/{{ inventory_hostname }}/{{ wireguard_interface }}/{{ item.path|basename }}'
     flat: true
   loop: '{{ wireguard_clients.files }}'
+
+- name: Remove obsolete QR codes
+  file:
+    path: '{{ playbook_dir }}/wireguard_qr/{{ inventory_hostname }}/{{ wireguard_interface }}/{{ item }}.png'
+    state: absent
+  loop: '{{ _wireguard_remove_users|default([]) }}'
+  delegate_to: localhost

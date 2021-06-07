@@ -45,9 +45,29 @@
     dest: /etc/wireguard/conf.d/{{ wireguard_interface }}/0-interface.conf
     mode: '0600'
 
+- name: Get existing users
+  find:
+    paths: /etc/wireguard/conf.d/{{ wireguard_interface }}/
+    excludes:
+      - 0-interface.conf
+    patterns:
+      - '*.conf'
+  register: find_users
+
+- name: Create var for users to remove
+  set_fact:
+    _wireguard_remove_users: '{{ find_users.files|map(attribute="path")|map("basename")|map("splitext")|map(attribute="0")|difference(wireguard_users) }}'
+
 - name: Create users
   include_tasks: create_user.yml
   loop: '{{ wireguard_users }}'
+  loop_control:
+    loop_var: wireguard_user
+    index_var: wireguard_user_index
+
+- name: Remove obsolete users
+  include_tasks: remove_user.yml
+  loop: '{{ _wireguard_remove_users }}'
   loop_control:
     loop_var: wireguard_user
     index_var: wireguard_user_index

@@ -1,0 +1,29 @@
+- name: '{{ wireguard_user }} | Remove private key'
+  file:
+    path: /etc/wireguard/keys/{{ wireguard_interface }}/{{ wireguard_user }}.key
+    state: absent
+
+- name: '{{ wireguard_user }} | Remove public key'
+  file:
+    path: /etc/wireguard/keys/{{ wireguard_interface }}/{{ wireguard_user }}.pub
+    state: absent
+
+- name: '{{ wireguard_user }} | Remove pre-shared key'
+  file:
+    path: /etc/wireguard/keys/{{ wireguard_interface }}/{{ wireguard_user }}.psk
+    state: absent
+
+- name: '{{ wireguard_user }} | Remove client config'
+  file:
+    path: /etc/wireguard/clients/{{ wireguard_interface }}/{{ wireguard_user }}.conf
+    state: absent
+
+- name: '{{ wireguard_user }} | Remove config stub'
+  file:
+    path: /etc/wireguard/conf.d/{{ wireguard_interface }}/{{ wireguard_user }}.conf
+    state: absent
+
+- name: '{{ wireguard_user }} | Remove QR code'
+  file:
+    path: /etc/wireguard/clients/{{ wireguard_interface }}/{{ wireguard_user }}.png
+    state: absent
