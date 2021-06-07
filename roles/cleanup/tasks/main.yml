@@ -1,4 +1,15 @@
 ---
+- name: Remove various bento files
+  file:
+    path: '{{ item }}'
+    state: absent
+    force: yes
+  loop:
+    - /etc/sudoers.d/vagrant
+    - /etc/sudoers.d/99_vagrant
+    - /etc/update-motd.d/99-bento
+    - /etc/polkit-1/rules.d/49-vagrant.rules
+
 - name: Remove the root users ssh key
   file:
     path: /root/.ssh/authorized_keys
@@ -14,14 +25,4 @@
     - ubuntu
     - vagrant
     - pi
-
-- name: Remove various bento files
-  file:
-    path: '{{ item }}'
-    state: absent
-    force: yes
-  loop:
-    - /etc/sudoers.d/vagrant
-    - /etc/sudoers.d/99_vagrant
-    - /etc/update-motd.d/99-bento
-    - /etc/polkit-1/rules.d/49-vagrant.rules
+    - admin
