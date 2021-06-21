@@ -34,24 +34,30 @@
       meta: end_play
       when: plex_installed_version == plex_version
 
-    - name: Download updated release package
-      get_url:
-        url: '{{ plex_release.url }}'
-        dest: '/tmp/{{ plex_release.url|basename }}'
-      register: plex_download
+    - block:
+        - name: Download updated release package
+          get_url:
+            url: '{{ plex_release.url }}'
+            dest: '/tmp/{{ plex_release.url|basename }}'
+          register: plex_download
 
-    - become: true
-      block:
-        - name: Stop Plex Media Server
-          command: synopkg stop "Plex Media Server"
+        - become: true
+          block:
+            - name: Stop Plex Media Server
+              command: synopkg stop "Plex Media Server"
 
-        - name: Install Plex Media Server
-          command: synopkg install {{ plex_download.dest }}
+            - name: Install Plex Media Server
+              command: synopkg install {{ plex_download.dest }}
 
-        - name: Start Plex Media Server
-          command: synopkg start "Plex Media Server"
+            - name: Start Plex Media Server
+              command: synopkg start "Plex Media Server"
+      always:
+        - name: Remove release package
+          file:
+            path: '{{ plex_download.dest }}'
+            state: absent
+          when: plex_download is successful
 
-    - name: Remove release package
-      file:
-        path: '{{ plex_download.dest }}'
-        state: absent
+        - fail:
+            msg: "{{ ansible_failed_result }}"
+          when: ansible_failed_result is defined
