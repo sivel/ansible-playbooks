@@ -1,0 +1,48 @@
+- name: Add cloudsmith caddy GPG key
+  apt_key:
+    url: https://dl.cloudsmith.io/public/caddy/stable/gpg.key
+
+- name: Add cloudsmith caddy repository
+  apt_repository:
+    repo: deb https://dl.cloudsmith.io/public/caddy/stable/deb/debian any-version main
+    filename: caddy-stable.list
+
+- name: Install latest version of caddy
+  apt:
+    name: caddy
+    state: latest
+    update_cache: yes
+    cache_valid_time: 86400
+
+- name: Check if the specified Caddyfile exists
+  stat:
+    path: "{{ caddyfile }}"
+  register: caddyfile_local_stat
+  when: caddyfile|default(None, True)
+  delegate_to: localhost
+
+- name: Add Caddyfile
+  copy:
+    src: "{{ caddyfile }}"
+    dest: /etc/caddy/Caddyfile
+    owner: www-data
+    group: www-data
+    mode: '0444'
+  when: caddyfile_local_stat is not skipped and caddyfile_local_stat.stat.exists
+  register: caddyfile_copy
+  notify:
+    - Restart caddy
+
+- name: Start and enable caddy
+  systemd:
+    name: caddy
+    enabled: yes
+    state: started
+  when: caddyfile_copy is not skipped
+
+- name: Disable caddy
+  systemd:
+    name: caddy
+    enabled: no
+    state: stopped
+  when: caddyfile_copy is skipped

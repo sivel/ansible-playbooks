@@ -1,0 +1,25 @@
+ansible.sivel.net {
+    tls matt@sivel.net
+    handle {
+        root * /var/www/ansible.sivel.net
+        file_server
+    }
+    handle_path /pr/* {
+        root * /var/www/pr-triage/htmlout
+        file_server
+    }
+    handle_path /test/* {
+        reverse_proxy unix//run/gunicorn/ansible-template-ui.socket
+    }
+
+    redir /bycifailures.html /pr{uri} 301
+    redir /byconflict.html /pr{uri} 301
+    redir /byfile.html /pr{uri} 301
+    redir /bymergecommits.html /pr{uri} 301
+    redir /bymultiauthor.html /pr{uri} 301
+    redir /byuser.html /pr{uri} 301
+
+    log {
+        output stdout
+    }
+}

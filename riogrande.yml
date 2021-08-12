@@ -56,8 +56,8 @@
 
     - import_role:
         role:
-          name: caddy
-          caddyfile: "{{ playbook_dir }}/files/riogrande/Caddyfile"
+          name: caddy_v2
+          caddyfile: "{{ playbook_dir }}/files/riogrande/Caddyfile.v2"
           caddy_plugins:
             - http.git
       tags:

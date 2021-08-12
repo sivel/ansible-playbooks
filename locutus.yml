@@ -3,8 +3,8 @@
   tasks:
     - import_role:
         role:
-          name: caddy
-          caddyfile: "{{ playbook_dir }}/files/locutus/Caddyfile"
+          name: caddy_v2
+          caddyfile: "{{ playbook_dir }}/files/locutus/Caddyfile.v2"
       become: true
       tags:
         - caddy

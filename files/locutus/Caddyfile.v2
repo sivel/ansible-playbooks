@@ -1,0 +1,5 @@
+locutus.sivel.net:9001 {
+    reverse_proxy localhost:9000
+
+    output stdout
+}
