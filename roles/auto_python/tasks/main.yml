@@ -1,0 +1,19 @@
+- when: ansible_python_interpreter is undefined
+  vars:
+    ansible_pipelining: true
+    ansible_become: false
+  block:
+    - name: Get OS release info
+      raw: >-
+        source /etc/os-release; _D_PY_FOUND=($({{ py_cmds }})); echo "{\"id\": \"${ID}\", \"like\": \"${ID_LIKE%% *}\", \"version\": \"${VERSION_ID%%.*}\", \"found\": \"${_D_PY_FOUND[0]}\"}"
+      vars:
+        py_cmds: '{{ _d_py_fallback|map("regex_replace", "(.+)", "command -v \1")|join("; ") }} || true'
+      register: _d_dist_raw
+
+    - name: Set discovered python interpreter
+      set_fact:
+        ansible_python_interpreter: '{{ by_like or by_id or distro.found }}'
+      vars:
+        distro: '{{ _d_dist_raw.stdout_lines[-1]|from_json }}'
+        by_id: '{{ _d_distro_map[distro.id][distro.version]|default(None) }}'
+        by_like: '{{ _d_distro_map[distro.like][distro.version]|default(None) }}'

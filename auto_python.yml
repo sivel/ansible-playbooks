@@ -1,0 +1,12 @@
+- hosts: all
+  gather_facts: false
+  tasks:
+    - import_role:
+        name: auto_python
+
+    - setup:
+        gather_subset: min
+        filter: ansible_python
+
+    - debug:
+        var: ansible_facts.python

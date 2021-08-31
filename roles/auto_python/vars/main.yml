@@ -1,0 +1,29 @@
+_d_distro_map:
+  centos: &id001
+    '6': /usr/bin/python
+    '8': /usr/libexec/platform-python
+    '9': /usr/bin/python3
+  debian:
+    '10': /usr/bin/python3
+    '8': /usr/bin/python
+  fedora:
+    '23': /usr/bin/python3
+  oracle: *id001
+  redhat: *id001
+  rhel: *id001
+  ubuntu:
+    '14': /usr/bin/python
+    '16': /usr/bin/python3
+_d_py_fallback:
+- python3.10
+- python3.9
+- python3.8
+- python3.7
+- python3.6
+- python3.5
+- /usr/bin/python3
+- /usr/libexec/platform-python
+- python2.7
+- python2.6
+- /usr/bin/python
+- python
