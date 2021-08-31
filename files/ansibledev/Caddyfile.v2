@@ -1,0 +1,17 @@
+sivel.eng.ansible.com {
+    tls matt@sivel.net
+    handle {
+        root * /home/sivel/web
+        file_server browse
+    }
+    handle /api/v1/* {
+        reverse_proxy http://127.0.0.1:5000
+    }
+    handle /api/* {
+        reverse_proxy http://127.0.0.1:5001
+    }
+
+    log {
+        output stdout
+    }
+}
