@@ -1,16 +1,15 @@
+_d_alias_map:
+  rhel: redhat
 _d_distro_map:
-  centos: &id001
-    '6': /usr/bin/python
-    '8': /usr/libexec/platform-python
-    '9': /usr/bin/python3
   debian:
     '10': /usr/bin/python3
     '8': /usr/bin/python
   fedora:
     '23': /usr/bin/python3
-  oracle: *id001
-  redhat: *id001
-  rhel: *id001
+  redhat:
+    '6': /usr/bin/python
+    '8': /usr/libexec/platform-python
+    '9': /usr/bin/python3
   ubuntu:
     '14': /usr/bin/python
     '16': /usr/bin/python3

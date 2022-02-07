@@ -16,4 +16,5 @@
       vars:
         distro: '{{ _d_dist_raw.stdout_lines[-1]|from_json }}'
         by_id: '{{ _d_distro_map[distro.id][distro.version]|default(None) }}'
-        by_like: '{{ _d_distro_map[distro.like][distro.version]|default(None) }}'
+        _like: '{{ _d_alias_map.get(distro.like, distro.like) }}'
+        by_like: '{{ _d_distro_map[_like][distro.version]|default(None) }}'

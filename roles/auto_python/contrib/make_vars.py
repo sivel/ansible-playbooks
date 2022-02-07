@@ -22,6 +22,9 @@ with open(base) as f:
 vars_data = {
     '_d_distro_map': data['INTERPRETER_PYTHON_DISTRO_MAP']['default'],
     '_d_py_fallback': data['INTERPRETER_PYTHON_FALLBACK']['default'],
+    '_d_alias_map': {
+        'rhel': 'redhat',
+    }
 }
 
 with open('vars/main.yml', 'w+') as f:
