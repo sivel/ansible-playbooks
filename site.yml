@@ -4,3 +4,4 @@
 - import_playbook: locutus.yml
 - import_playbook: ansibledev.yml
 - import_playbook: wireguard.yml
+- import_playbook: porky.yml

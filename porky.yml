@@ -1,0 +1,10 @@
+---
+- hosts: porky
+  tasks:
+    - import_role:
+        role:
+          name: caddy_v2
+          caddyfile: "{{ playbook_dir }}/files/porky/Caddyfile.v2"
+      become: true
+      tags:
+        - caddy

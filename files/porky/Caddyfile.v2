@@ -1,0 +1,18 @@
+porky.noc.sivel.net, ipv4.noc.sivel.net, ziplink.noc.sivel.net, frontier.noc.sivel.net {
+    tls matt@sivel.net
+
+    handle /ip {
+        respond 200 {
+            body `{remote_host}
+`
+        }
+    }
+
+    handle * {
+        error 403
+    }
+
+    log {
+        output stdout
+    }
+}
