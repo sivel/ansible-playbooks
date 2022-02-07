@@ -1,5 +1,43 @@
-locutus.sivel.net:9001 {
-    reverse_proxy localhost:9000
+locutus.sivel.net, alt.locutus.sivel.net {
+    tls matt@sivel.net
 
-    output stdout
+    handle /ip {
+        respond 200 {
+            body `{remote_host}
+`
+        }
+    }
+
+    handle * {
+        error 403
+    }
+
+    log {
+        output stdout
+    }
+}
+
+locutus.sivel.net:9001 {
+    tls matt@sivel.net
+
+    @glowing_bear {
+        header Connection Upgrade
+        header Upgrade    websocket
+        header Origin     https://glowing-bear.org
+        path /weechat
+    }
+    @not_glowing_bear {
+        not {
+            header Connection Upgrade
+            header Upgrade    websocket
+            header Origin     https://glowing-bear.org
+            path /weechat
+        }
+    }
+    reverse_proxy @glowing_bear localhost:9000
+    error @not_glowing_bear 403
+
+    log {
+        output stdout
+    }
 }
