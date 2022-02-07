@@ -1,14 +1,19 @@
 [ansibledev]
 children = [
     "discovery",
-    "porky",
 ]
 
 [noc]
 children = [
     "porky",
     "vpn",
-    "zero",
+    "binars",
+]
+
+[overseer]
+children = [
+    "porky",
+    "locutus",
 ]
 
 [ansibledev.hosts]
@@ -32,9 +37,6 @@ children = [
 
 [vpn.hosts]
 "vpn.noc.sivel.net" = { proxmox = true }
-
-[zero.hosts]
-"zero.noc.sivel.net" = {}
 
 [vivo.hosts]
 "vivo.noc.sivel.net" = {}
