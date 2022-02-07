@@ -8,6 +8,8 @@ AllowGroups {{ opensshd_AllowGroups|join(' ') }}
 
 AllowTcpForwarding {{ opensshd_AllowTcpForwarding }}
 
+AllowStreamLocalForwarding {{ opensshd_AllowStreamLocalForwarding }}
+
 {% if opensshd_AllowUsers is defined %}
 AllowUsers {{ opensshd_AllowUsers|join(' ') }}
 {% endif %}
@@ -24,17 +26,29 @@ AuthorizedKeysCommand {{ opensshd_AuthorizedKeysCommand }}
 AuthorizedKeysCommandUser {{ opensshd_AuthorizedKeysCommandUser }}
 {% endif %}
 
-{% if opensshd_AuthorizedKeysCommandRunAs is defined %}
-AuthorizedKeysCommandRunAs {{ opensshd_AuthorizedKeysCommandRunAs }}
-{% endif %}
-
 {% if opensshd_AuthorizedKeysFile is string %}
 AuthorizedKeysFile {{ opensshd_AuthorizedKeysFile }}
 {% else %}
 AuthorizedKeysFile {{ opensshd_AuthorizedKeysFile|join(' ') }}
 {% endif %}
 
+{% if opensshd_AuthorizedPrincipalsCommand is defined %}
+AuthorizedPrincipalsCommand {{ opensshd_AuthorizedPrincipalsCommand }}
+{% endif %}
+
+{% if opensshd_AuthorizedPrincipalsCommandUser is defined %}
+AuthorizedPrincipalsCommandUser {{ opensshd_AuthorizedPrincipalsCommandUser }}
+{% endif %}
+
+{% if opensshd_AuthorizedPrincipalsFile is defined %}
+AuthorizedPrincipalsFile PP opensshd_AuthorizedPrincipalsFile }}
+{% endif %}
+
 Banner {{ opensshd_Banner }}
+
+CASignatureAlgorithms {{ opensshd_CASignatureAlgorithms|join(',') }}
+
+ChrootDirectory {{ opensshd_ChrootDirectory }}
 
 ChallengeResponseAuthentication {{ opensshd_ChallengeResponseAuthentication }}
 
@@ -42,15 +56,15 @@ ChallengeResponseAuthentication {{ opensshd_ChallengeResponseAuthentication }}
 ChrootDirectory {{ opensshd_ChrootDirectory }}
 {% endif %}
 
-{% if opensshd_Ciphers is defined %}
 Ciphers {{ opensshd_Ciphers|join(',') }}
-{% endif %}
 
 ClientAliveCountMax {{ opensshd_ClientAliveCountMax }}
 
 ClientAliveInterval {{ opensshd_ClientAliveInterval }}
 
 Compression {{ opensshd_Compression }}
+
+{# DebianBanner #}
 
 {% if opensshd_DenyGroups is defined %}
 DenyGroups {{ opensshd_DenyGroups|join(' ') }}
@@ -59,6 +73,14 @@ DenyGroups {{ opensshd_DenyGroups|join(' ') }}
 {% if opensshd_DenyUsers is defined %}
 DenyUsers {{ opensshd_DenyUsers|join(' ') }}
 {% endif %}
+
+{% if opensshd_DisableForwarding is defined %}
+DisableForwarding {{ opensshd_DisableForwarding }}
+{% endif %}
+
+ExposeAuthInfo {{ opensshd_ExposeAuthInfo }}
+
+FingerprintHash {{ opensshd_FingerprintHash }}
 
 {% if opensshd_ForceCommand is defined %}
 ForceCommand {{ opensshd_ForceCommand }}
@@ -69,6 +91,16 @@ GatewayPorts {{ opensshd_GatewayPorts }}
 GSSAPIAuthentication {{ opensshd_GSSAPIAuthentication }}
 
 GSSAPICleanupCredentials {{ opensshd_GSSAPICleanupCredentials }}
+
+GSSAPIKeyExchange {{ opensshd_GSSAPIKeyExchange }}
+
+GSSAPIStrictAcceptorCheck {{ opensshd_GSSAPIStrictAcceptorCheck }}
+
+GSSAPIStoreCredentialsOnRekey {{ opensshd_GSSAPIStoreCredentialsOnRekey }}
+
+GSSAPIKexAlgorithms {{ opensshd_GSSAPIKexAlgorithms|join(',') }}
+
+HostbasedAcceptedKeyTypes {{ opensshd_HostbasedAcceptedKeyTypes|join(',') }}
 
 HostbasedAuthentication {{ opensshd_HostbasedAuthentication }}
 
@@ -92,25 +124,43 @@ HostKey {{ key }}
 HostKeyAgent {{ opensshd_HostKeyAgent }}
 {% endif %}
 
+HostKeyAlgorithms {{ opensshd_HostKeyAlgorithms|join(',') }}
+
 IgnoreRhosts {{ opensshd_IgnoreRhosts }}
 
 IgnoreUserKnownHosts {{ opensshd_IgnoreUserKnownHosts }}
+
+{% if opensshd_Include is defined %}
+Include {{ opensshd_Include|join(' ') }}
+{% endif %}
 
 {% if opensshd_IPQoS is defined %}
 IPQoS {{ opensshd_IPQoS|join(' ') }}
 {% endif %}
 
+{% if opensshd_KbdInteractiveAuthentication is defined %}
+KbdInteractiveAuthentication {{ opensshd_KbdInteractiveAuthentication }}
+{% endif %}
+
 KerberosAuthentication {{ opensshd_KerberosAuthentication }}
+
+{% if opensshd_KerberosGetAFSToken != "no" %}
+KerberosGetAFSToken {{ opensshd_KerberosGetAFSToken }}
+{% endif %}
 
 KerberosOrLocalPasswd {{ opensshd_KerberosOrLocalPasswd }}
 
 KerberosTicketCleanup {{ opensshd_KerberosTicketCleanup }}
 
-{% if opensshd_KexAlgorithms is defined %}
 KexAlgorithms {{ opensshd_KexAlgorithms|join(',') }}
-{% endif %}
 
-KeyRegenerationInterval {{ opensshd_KeyRegenerationInterval }}
+{% if opensshd_ListenAddress is string %}
+ListenAddress {{ opensshd_ListenAddress }}
+{% else %}
+{% for address in opensshd_ListenAddress %}
+ListenAddress {{ address }}
+{% endfor %}
+{% endif %}
 
 LoginGraceTime {{ opensshd_LoginGraceTime }}
 
@@ -120,17 +170,30 @@ LogLevel {{ opensshd_LogLevel }}
 MACs {{ opensshd_MACs|join(',') }}
 {% endif %}
 
+{% for match in opensshd_Match %}
+Match {{ match.type }} {{ match.name }}
+{% for key, value in match.config.items() %}
+    {{ key }} {{ value }}
+{% endfor %}
+{% endfor %}
+
 MaxAuthTries {{ opensshd_MaxAuthTries }}
 
-{% if opensshd_MaxSessions is defined %}
 MaxSessions {{ opensshd_MaxSessions }}
-{% endif %}
 
 MaxStartups {{ opensshd_MaxStartups }}
 
 PasswordAuthentication {{ opensshd_PasswordAuthentication }}
 
 PermitEmptyPasswords {{ opensshd_PermitEmptyPasswords }}
+
+{% if opensshd_PermitListen is string %}
+PermitListen {{ opensshd_PermitListen }}
+{% else %}
+{% for address in opensshd_PermitListen %}
+PermitListen {{ address }}
+{% endfor %}
+{% endif %}
 
 {% if opensshd_PermitOpen is string %}
 PermitOpen {{ opensshd_PermitOpen }}
@@ -142,9 +205,13 @@ PermitOpen {{ address }}
 
 PermitRootLogin {{ opensshd_PermitRootLogin }}
 
+PermitTTY {{ opensshd_PermitTTY }}
+
 PermitTunnel {{ opensshd_PermitTunnel }}
 
 PermitUserEnvironment {{ opensshd_PermitUserEnvironment }}
+
+PermitUserRC {{ opensshd_PermitUserRC }}
 
 PidFile {{ opensshd_PidFile }}
 
@@ -156,35 +223,35 @@ Port {{ port }}
 {% endfor %}
 {% endif %}
 
-{% if opensshd_ListenAddress is string %}
-ListenAddress {{ opensshd_ListenAddress }}
-{% else %}
-{% for address in opensshd_ListenAddress %}
-ListenAddress {{ address }}
-{% endfor %}
-{% endif %}
-
 PrintLastLog {{ opensshd_PrintLastLog }}
 
 PrintMotd {{ opensshd_PrintMotd }}
 
-{% if opensshd_Protocol is number or opensshd_Protocol is string %}
-Protocol {{ opensshd_Protocol }}
-{% else %}
-Protocol {{ opensshd_Protocol|join(',') }}
-{% endif %}
+PubkeyAcceptedKeyTypes {{ opensshd_PubkeyAcceptedKeyTypes|join(',') }}
+
+PubkeyAuthOptions {{ opensshd_PubkeyAuthOptions }}
 
 PubkeyAuthentication {{ opensshd_PubkeyAuthentication }}
 
-{% if opensshd_RevokedKeys is defined %}
+RekeyLimit {{ opensshd_RekeyLimit }}
+
 RevokedKeys {{ opensshd_RevokedKeys }}
+
+{% if opensshd_RDomain is defined %}
+RDomain {{ opensshd_RDomain }}
 {% endif %}
 
-RhostsRSAAuthentication {{ opensshd_RhostsRSAAuthentication }}
+{% if opensshd_SecurityKeyProvider is defined %}
+SecurityKeyProvider {{ opensshd_SecurityKeyProvider }}
+{% endif %}
 
-RSAAuthentication {{ opensshd_RSAAuthentication }}
+{% if opensshd_SetEnv %}
+SetEnv {{ opensshd_SetEnv|join(' ') }}
+{% endif %}
 
-ServerKeyBits {{ opensshd_ServerKeyBits }}
+StreamLocalBindMask {{ opensshd_StreamLocalBindMask }}
+
+StreamLocalBindUnlink {{ opensshd_StreamLocalBindUnlink }}
 
 StrictModes {{ opensshd_StrictModes }}
 
@@ -202,11 +269,9 @@ TrustedUserCAKeys {{ opensshd_TrustedUserCAKeys }}
 
 UseDNS {{ opensshd_UseDNS }}
 
-UseLogin {{ opensshd_UseLogin }}
-
 UsePAM {{ opensshd_UsePAM }}
 
-UsePrivilegeSeparation {{ opensshd_UsePrivilegeSeparation }}
+VersionAddendum {{ opensshd_VersionAddendum }}
 
 X11DisplayOffset {{ opensshd_X11DisplayOffset }}
 
@@ -216,9 +281,6 @@ X11UseLocalhost {{ opensshd_X11UseLocalhost }}
 
 XAuthLocation {{ opensshd_XAuthLocation }}
 
-{% for match in opensshd_Match %}
-Match {{ match.type }} {{ match.name }}
-{% for key, value in match.config.items() %}
-    {{ key }} {{ value }}
-{% endfor %}
+{% for key, value in opensshd_Extra|default({})|dictsort %}
+{{ key }} {{ value }}
 {% endfor %}

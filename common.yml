@@ -50,9 +50,7 @@
     - import_role:
         role:
           name: openssh
-          opensshd_PermitRootLogin: "no"
           opensshd_PasswordAuthentication: "no"
-          opensshd_UseDNS: "no"
       tags:
         - openssh
 

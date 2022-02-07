@@ -9,8 +9,8 @@
   when: openssh_loaded_os_family|default(False) == False
 
 - name: Configure SSHd
-  template:
-    src: sshd_config.j2
+  copy:
+    content: '{{ lookup("template", "sshd_config.j2")|regex_replace("^$\n", "", multiline=True) }}'
     dest: /etc/ssh/sshd_config
     group: root
     owner: root

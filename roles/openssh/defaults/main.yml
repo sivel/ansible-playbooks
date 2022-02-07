@@ -9,17 +9,44 @@ opensshd_AllowAgentForwarding: "yes"
 
 opensshd_AllowTcpForwarding: "yes"
 
-opensshd_AuthorizedKeysFile: .ssh/authorized_keys
+opensshd_AllowStreamLocalForwarding: "yes"
+
+opensshd_AuthorizedKeysFile:
+  - .ssh/authorized_keys
+  - .ssh/authorized_keys2
 
 opensshd_Banner: "none"
 
-opensshd_ChallengeResponseAuthentication: "no"
+opensshd_CASignatureAlgorithms:
+  - ecdsa-sha2-nistp256
+  - ecdsa-sha2-nistp384
+  - ecdsa-sha2-nistp521
+  - ssh-ed25519
+  - rsa-sha2-512
+  - rsa-sha2-256
+  - ssh-rsa
+
+opensshd_ChallengeResponseAuthentication: "yes"
+
+opensshd_ChrootDirectory: "none"
+
+opensshd_Ciphers:
+  - chacha20-poly1305@openssh.com
+  - aes128-ctr
+  - aes192-ctr
+  - aes256-ctr
+  - aes128-gcm@openssh.com
+  - aes256-gcm@openssh.com
 
 opensshd_ClientAliveCountMax: 3
 
 opensshd_ClientAliveInterval: 0
 
-opensshd_Compression: delayed
+opensshd_Compression: "yes"
+
+opensshd_ExposeAuthInfo: "no"
+
+opensshd_FingerprintHash: sha256
 
 opensshd_GatewayPorts: "no"
 
@@ -27,9 +54,59 @@ opensshd_GSSAPIAuthentication: "no"
 
 opensshd_GSSAPICleanupCredentials: "yes"
 
+opensshd_GSSAPIKeyExchange: "no"
+
+opensshd_GSSAPIStrictAcceptorCheck: "yes"
+
+opensshd_GSSAPIStoreCredentialsOnRekey: "no"
+
+opensshd_GSSAPIKexAlgorithms:
+  - gss-gex-sha1-
+  - gss-group14-sha1-
+
+opensshd_HostbasedAcceptedKeyTypes:
+  - ecdsa-sha2-nistp256-cert-v01@openssh.com
+  - ecdsa-sha2-nistp384-cert-v01@openssh.com
+  - ecdsa-sha2-nistp521-cert-v01@openssh.com
+  - sk-ecdsa-sha2-nistp256-cert-v01@openssh.com
+  - ssh-ed25519-cert-v01@openssh.com
+  - sk-ssh-ed25519-cert-v01@openssh.com
+  - rsa-sha2-512-cert-v01@openssh.com
+  - rsa-sha2-256-cert-v01@openssh.com
+  - ssh-rsa-cert-v01@openssh.com
+  - ecdsa-sha2-nistp256
+  - ecdsa-sha2-nistp384
+  - ecdsa-sha2-nistp521
+  - sk-ecdsa-sha2-nistp256@openssh.com
+  - ssh-ed25519
+  - sk-ssh-ed25519@openssh.com
+  - rsa-sha2-512
+  - rsa-sha2-256
+  - ssh-rsa
+
 opensshd_HostbasedAuthentication: "no"
 
 opensshd_HostbasedUsesNameFromPacketOnly: "no"
+
+opensshd_HostKeyAlgorithms:
+  - ecdsa-sha2-nistp256-cert-v01@openssh.com
+  - ecdsa-sha2-nistp384-cert-v01@openssh.com
+  - ecdsa-sha2-nistp521-cert-v01@openssh.com
+  - sk-ecdsa-sha2-nistp256-cert-v01@openssh.com
+  - ssh-ed25519-cert-v01@openssh.com
+  - sk-ssh-ed25519-cert-v01@openssh.com
+  - rsa-sha2-512-cert-v01@openssh.com
+  - rsa-sha2-256-cert-v01@openssh.com
+  - ssh-rsa-cert-v01@openssh.com
+  - ecdsa-sha2-nistp256
+  - ecdsa-sha2-nistp384
+  - ecdsa-sha2-nistp521
+  - sk-ecdsa-sha2-nistp256@openssh.com
+  - ssh-ed25519
+  - sk-ssh-ed25519@openssh.com
+  - rsa-sha2-512
+  - rsa-sha2-256
+  - ssh-rsa
 
 opensshd_IgnoreRhosts: "yes"
 
@@ -37,11 +114,22 @@ opensshd_IgnoreUserKnownHosts: "no"
 
 opensshd_KerberosAuthentication: "no"
 
+opensshd_KerberosGetAFSToken: "no"
+
 opensshd_KerberosOrLocalPasswd: "yes"
 
 opensshd_KerberosTicketCleanup: "yes"
 
-opensshd_KeyRegenerationInterval: 3600
+opensshd_KexAlgorithms:
+  - curve25519-sha256
+  - curve25519-sha256@libssh.org
+  - ecdh-sha2-nistp256
+  - ecdh-sha2-nistp384
+  - ecdh-sha2-nistp521
+  - diffie-hellman-group-exchange-sha256
+  - diffie-hellman-group16-sha512
+  - diffie-hellman-group18-sha512
+  - diffie-hellman-group14-sha256
 
 opensshd_ListenAddress: []
 
@@ -49,9 +137,23 @@ opensshd_LoginGraceTime: 120
 
 opensshd_LogLevel: "INFO"
 
+opensshd_MACs:
+  - umac-64-etm@openssh.com
+  - umac-128-etm@openssh.com
+  - hmac-sha2-256-etm@openssh.com
+  - hmac-sha2-512-etm@openssh.com
+  - hmac-sha1-etm@openssh.com
+  - umac-64@openssh.com
+  - umac-128@openssh.com
+  - hmac-sha2-256
+  - hmac-sha2-512
+  - hmac-sha1
+
 opensshd_Match: {}
 
 opensshd_MaxAuthTries: 6
+
+opensshd_MaxSessions: 10
 
 opensshd_MaxStartups: "10:30:100"
 
@@ -59,15 +161,21 @@ opensshd_PasswordAuthentication: "yes"
 
 opensshd_PermitEmptyPasswords: "no"
 
+opensshd_PermitListen: []
+
 opensshd_PermitOpen: []
 
-opensshd_PermitRootLogin: "yes"
+opensshd_PermitRootLogin: "prohibit-password"
+
+opensshd_PermitTTY: "yes"
 
 opensshd_PermitTunnel: "no"
 
 opensshd_PermitUserEnvironment: "no"
 
-opensshd_PidFile: "/var/run/sshd.pid"
+opensshd_PermitUserRC: "yes"
+
+opensshd_PidFile: "/run/sshd.pid"
 
 opensshd_Port: 22
 
@@ -75,32 +183,54 @@ opensshd_PrintLastLog: "yes"
 
 opensshd_PrintMotd: "yes"
 
-opensshd_Protocol: 2
+opensshd_PubkeyAcceptedKeyTypes:
+  - ecdsa-sha2-nistp256-cert-v01@openssh.com
+  - ecdsa-sha2-nistp384-cert-v01@openssh.com
+  - ecdsa-sha2-nistp521-cert-v01@openssh.com
+  - sk-ecdsa-sha2-nistp256-cert-v01@openssh.com
+  - ssh-ed25519-cert-v01@openssh.com
+  - sk-ssh-ed25519-cert-v01@openssh.com
+  - rsa-sha2-512-cert-v01@openssh.com
+  - rsa-sha2-256-cert-v01@openssh.com
+  - ssh-rsa-cert-v01@openssh.com
+  - ecdsa-sha2-nistp256
+  - ecdsa-sha2-nistp384
+  - ecdsa-sha2-nistp521
+  - sk-ecdsa-sha2-nistp256@openssh.com
+  - ssh-ed25519
+  - sk-ssh-ed25519@openssh.com
+  - rsa-sha2-512
+  - rsa-sha2-256
+  - ssh-rsa
+
+opensshd_PubkeyAuthOptions: "none"
 
 opensshd_PubkeyAuthentication: "yes"
 
-opensshd_RhostsRSAAuthentication: "no"
+opensshd_RekeyLimit: default none
 
-opensshd_RSAAuthentication: "yes"
+opensshd_RevokedKeys: "none"
 
-opensshd_ServerKeyBits: 1024
+opensshd_SetEnv: []
+
+opensshd_StreamLocalBindMask: "0177"
+
+opensshd_StreamLocalBindUnlink: "no"
 
 opensshd_StrictModes: "yes"
 
 opensshd_Subsystem:
-  sftp: "{{ opensshd_default_Subsystem.sftp[ansible_os_family] }}"
+  sftp: "{{ opensshd_default_Subsystem.sftp[ansible_facts.os_family] }}"
 
 opensshd_SyslogFacility: "AUTH"
 
 opensshd_TCPKeepAlive: "yes"
 
-opensshd_UseDNS: "yes"
-
-opensshd_UseLogin: "no"
+opensshd_UseDNS: "no"
 
 opensshd_UsePAM: "yes"
 
-opensshd_UsePrivilegeSeparation: "yes"
+opensshd_VersionAddendum: "none"
 
 opensshd_X11DisplayOffset: 10
 
@@ -108,4 +238,4 @@ opensshd_X11Forwarding: "no"
 
 opensshd_X11UseLocalhost: "yes"
 
-opensshd_XAuthLocation: /usr/X11R6/bin/xauth
+opensshd_XAuthLocation: /usr/bin/xauth
