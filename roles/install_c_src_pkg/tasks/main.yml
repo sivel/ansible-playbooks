@@ -1,0 +1,40 @@
+- environment:
+    CFLAGS: -O3 -I{{ prefix }}/include
+    CPPFLAGS: -I{{ prefix }}/include
+    LDFLAGS: -L{{ prefix }}/lib
+    LD_LIBRARY_PATH: '{{ prefix }}/lib'
+    DYLD_LIBRARY_PATH: '{{ prefix }}/lib'
+    C_INCLUDE_PATH: '{{ prefix }}/include'
+  block:
+    - name: Create {{ src }} directory
+      file:
+        path: '{{ src }}'
+        state: directory
+
+    - name: Fetch {{ package.name }}
+      get_url:
+        url: '{{ package.url }}'
+        dest: '{{ src }}/{{ package.filename|default(package.url|basename) }}'
+      register: get_package
+
+    - when: get_package is changed
+      block:
+        - name: Extract {{ package.name }}
+          command: tar xzvf {{ get_package.dest }}
+          args:
+            chdir: '{{ src }}'
+          register: extract_package
+
+        - vars:
+            extract_package_output: '{{ extract_package.stderr_lines if extract_package.stderr_lines else extract_package.stdout_lines }}'
+            package_dir: '{{ src }}/{{ extract_package_output.0.split()|last }}'
+          block:
+            - name: Configure {{ package.name }}
+              shell: '{{ package.configure|default(common_configure ~ " " ~ package.extra_configure|default("")) }}'
+              args:
+                chdir: '{{ package_dir }}'
+
+            - name: Build and install {{ package.name }}
+              shell: '{{ package.make|default("make") }} && {{ package.make_install|default("make install") }}'
+              args:
+                chdir: '{{ package_dir }}'

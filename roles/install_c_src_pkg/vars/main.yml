@@ -1,0 +1,2 @@
+common_configure: ./configure --prefix={{ prefix }}
+src: '{{ prefix }}/src'

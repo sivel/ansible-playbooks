@@ -1,0 +1,74 @@
+- hosts: localhost
+  gather_facts: false
+  vars:
+    packages:
+      - name: autoconf
+        url: http://ftpmirror.gnu.org/autoconf/autoconf-2.71.tar.xz
+      - name: automake
+        url: http://ftpmirror.gnu.org/automake/automake-1.16.5.tar.xz
+      - name: libtool
+        url: http://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.gz
+      - name: m4
+        url: http://ftpmirror.gnu.org/m4/m4-1.4.19.tar.xz
+      - name: pkg-config
+        url: https://pkgconfig.freedesktop.org/releases/pkg-config-0.29.2.tar.gz
+        extra_configure: --with-internal-glib
+        environment:
+          LDFLAGS: "-framework CoreFoundation -framework Carbon $LDFLAGS"
+      - name: gettext
+        url: http://ftpmirror.gnu.org/gettext/gettext-0.21.tar.gz
+      # - name: zlib
+      #   url: https://zlib.net/zlib-1.2.11.tar.xz
+      - name: gmp
+        url: https://gmplib.org/download/gmp/gmp-6.2.1.tar.lz
+      - name: nettle
+        url: http://ftpmirror.gnu.org/nettle/nettle-3.7.3.tar.gz
+      - name: libunistring
+        url: http://ftpmirror.gnu.org/libunistring/libunistring-1.0.tar.xz
+      - name: libtasn1
+        url: http://ftpmirror.gnu.org/libtasn1/libtasn1-4.18.0.tar.gz
+      - name: gnutls
+        url: https://www.gnupg.org/ftp/gcrypt/gnutls/v3.6/gnutls-3.6.16.tar.xz
+        extra_configure: --with-included-libtasn1 --without-p11-kit
+      - name: pcre
+        url: https://sourceforge.net/projects/pcre/files/pcre/8.45/pcre-8.45.tar.bz2/download
+        filename: pcre-8.45.tar.bz2
+      - name: lzma
+        url: https://tukaani.org/xz/xz-5.2.5.tar.xz
+      - name: wget
+        url: http://ftpmirror.gnu.org/wget/wget-1.21.2.tar.lz
+      - name: tar
+        url: http://ftpmirror.gnu.org/tar/tar-1.34.tar.xz
+        extra_configure: --program-prefix=g
+      - name: sed
+        url: http://ftpmirror.gnu.org/sed/sed-4.8.tar.xz
+        extra_configure: --program-prefix=g
+      - name: the_silver_searcher
+        url: https://geoff.greer.fm/ag/releases/the_silver_searcher-2.2.0.tar.gz
+      - name: tig
+        url: https://github.com/jonas/tig/releases/download/tig-2.5.4/tig-2.5.4.tar.gz
+      - name: glib
+        url: https://download.gnome.org/sources/glib/2.71/glib-2.71.0.tar.xz
+        configure: meson --prefix={{ prefix }} _build
+        make: ninja -C _build
+        make_install: ninja -C _build install
+      - name: pixman
+        url: https://cairographics.org/releases/pixman-0.40.0.tar.gz
+      - name: qemu
+        url: https://download.qemu.org/qemu-6.2.0.tar.xz
+        extra_configure: --target-list=x86_64-softmmu,aarch64-softmmu
+      - name: libusb
+        url: https://github.com/libusb/libusb/releases/download/v1.0.25/libusb-1.0.25.tar.bz2
+    prefix: /Users/matt
+  tasks:
+    - include_role:
+        name: install_c_src_pkg
+        apply:
+          become: false
+          tags:
+            - '{{ package.name }}'
+      loop: '{{ packages }}'
+      loop_control:
+        loop_var: package
+      tags:
+        - always
