@@ -21,8 +21,12 @@
     name: '{{ item }}'
     state: absent
     remove: yes
+    force: yes
   loop:
     - ubuntu
     - vagrant
     - pi
     - admin
+    - centos
+    - debian
+    - cloud-user
