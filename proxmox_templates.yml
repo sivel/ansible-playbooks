@@ -49,6 +49,8 @@
         - name: Add vmid to existing images
           set_fact:
             vmid: '{{ (vms.json.data|selectattr("name", "eq", item)|default([{"vmid": omit}], true)|first)["vmid"] }}'
+            # avoid there not being an existing vmid
+            _not_used: _not_used
           loop: '{{ groups.templates }}'
           delegate_to: '{{ item }}'
           delegate_facts: true
