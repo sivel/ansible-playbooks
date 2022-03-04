@@ -30,3 +30,6 @@
     - centos
     - debian
     - cloud-user
+    - freebsd
+    - netbsd
+    - openbsd

@@ -7,6 +7,6 @@ users:
 packages:
   - qemu-guest-agent
 package_update: true
-package_upgrade: true
+package_upgrade: false
 ssh_authorized_keys:
   - ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAobgkJ+DOnIDYeDsDRkQBxzUmIGyXRfy3/Mp41Tk/mu2XswmktlLwBduEnuxRiwLWwKIhSewDOGtCxGw/kaGtUWAhInTk0Al8San8xPjcOZZoGP/VYCN2sQ4UJ+SGzgetwn5ubBFJWHTJu5lfA8V7B0l+SoYJI2Ztccvy6LvydUPOnIAQaKIAlHHszA5iLwm4FrlN0IpGzmrLkuI5pJ9XyFKbS2Cdh9rTvxetGYy7N0LCzCWGQlrKqbkkclIJjWI5Km6LZl6DGEKbWYYqjG3ILtng4raTe0ZzF3+Jeq4mrPKThbE7s4B60KHhDXiRiNqKHXhCc8EHAFZ13hzM+HYUUw== matt@sivel.net
