@@ -1,0 +1,100 @@
+- hosts: localhost
+  gather_facts: false
+  module_defaults:
+    uri:
+      headers:
+        Authorization: 'PVEAPIToken={{ pve_api_token }}'
+      validate_certs: false
+  vars_prompt:
+    - name: vm_name
+      prompt: What do you want to call this VM?
+      private: no
+    - name: is_test
+      prompt: Is this a test VM?
+      private: no
+  vars:
+    id_range: '{{ [3001, 3100] if is_test|bool else [1001, 1100] }}'
+  tasks:
+    - name: Fetch list of existing proxmox VMs
+      uri:
+        url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu
+      register: vms
+
+    - set_fact:
+        templates: '{{ vms.json.data|selectattr("template", "defined")|selectattr("template") }}'
+        vmid: '{{ pool|first }}'
+      vars:
+        existing: '{{ vms.json.data|map(attribute="vmid")|map("int")|sort }}'
+        pool: '{{ range(*id_range)|difference(existing)|sort }}'
+
+    - pause:
+        prompt: |
+          Which template do you want to use as the source?
+
+          {% for template in templates|sort(attribute='vmid') %}
+          {{ template.vmid }}: {{ template.name }}
+          {% endfor %}
+
+      register: input_template
+
+    - set_fact:
+        template: '{{ templates|selectattr(attribute, "eq", user_input|int if is_numeric else user_input)|first }}'
+      vars:
+        user_input: '{{ input_template.user_input }}'
+        attribute: '{{ "vmid" if is_numeric else "name" }}'
+        is_numeric: '{{ user_input.isnumeric() }}'
+
+    - name: Clone the template
+      uri:
+        url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ template.vmid }}/clone
+        method: POST
+        body:
+          name: '{{ vm_name }}'
+          newid: '{{ vmid }}'
+          full: 0
+        body_format: form-urlencoded
+      changed_when: true
+      register: vm_create
+
+    - name: Update prod VM config
+      uri:
+        url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ vmid }}/config
+        method: PUT
+        body:
+          cores: 4
+          memory: 8192
+          balloon: 8192
+          onboot: 1
+          protection: 1
+        body_format: form-urlencoded
+      changed_when: true
+      when: not is_test|bool
+
+    - name: Start the VM
+      uri:
+        url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ vmid }}/status/start
+        method: POST
+      changed_when: true
+
+    - name: Wait for the agent to be alive
+      uri:
+        url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ vmid }}/agent/ping
+        method: POST
+      register: ping
+      until: ping is successful
+      delay: 1
+      retries: 60
+      changed_when: true
+
+    - name: Get network interfaces
+      uri:
+        url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ vmid }}/agent/network-get-interfaces
+      register: interfaces
+      until: interfaces.json.data.result|selectattr('ip-addresses', 'defined')|map(attribute='ip-addresses')|flatten|selectattr('ip-address', 'match', '192.168.7.') != []
+      delay: 1
+      retries: 60
+      changed_when: true
+
+    - debug:
+        msg: >-
+          {{ vmid }}: {{ interfaces.json.data.result|map(attribute='ip-addresses')|flatten|selectattr('ip-address', 'match', '192.168.7.')|map(attribute='ip-address')|first }}

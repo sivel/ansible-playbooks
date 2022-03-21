@@ -1,0 +1,29 @@
+- hosts: localhost
+  gather_facts: false
+  module_defaults:
+    uri:
+      headers:
+        Authorization: 'PVEAPIToken={{ pve_api_token }}'
+      validate_certs: false
+  vars_prompt:
+    - name: vmids
+      prompt: VMIDs
+      private: false
+  tasks:
+    - name: Stop the VM
+      uri:
+        url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ vmid }}/status/stop
+        method: POST
+      changed_when: true
+      loop: '{{ vmids.split(",") }}'
+      loop_control:
+        loop_var: vmid
+
+    - name: Destroy the VM
+      uri:
+        url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ vmid }}?purge=1
+        method: DELETE
+      changed_when: true
+      loop: '{{ vmids.split(",") }}'
+      loop_control:
+        loop_var: vmid
