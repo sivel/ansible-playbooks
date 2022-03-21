@@ -365,6 +365,7 @@ def main():
     candidate_basenames = set((
         os.path.basename(dest),
         os.path.basename(url),
+        '*',
     ))
 
     if module.params['checksum']:
