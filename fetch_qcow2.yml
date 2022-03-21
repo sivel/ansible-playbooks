@@ -2,19 +2,29 @@
   gather_facts: false
   vars:
     distros:
+      centos7:
+        url: https://cloud.centos.org/centos/7/images/
+        # checksum: https://cloud.centos.org/centos/7/images/sha256sum.txt
       centos_stream8:
         url: https://cloud.centos.org/centos/8-stream/x86_64/images/
+        checksum: https://cloud.centos.org/centos/8-stream/x86_64/images/CHECKSUM
       centos_stream9:
         url: https://cloud.centos.org/centos/9-stream/x86_64/images/
+        checksum: https://cloud.centos.org/centos/9-stream/x86_64/images/CHECKSUM
       fedora35:
         url: https://download.fedoraproject.org/pub/fedora/linux/releases/35/Cloud/x86_64/images/
+        checksum: https://ftp-chi.osuosl.org/pub/fedora/linux/releases/35/Cloud/x86_64/images/Fedora-Cloud-35-1.2-x86_64-CHECKSUM
       ubuntu2004:
         url: https://cloud-images.ubuntu.com/focal/current/
         prefix: ubuntu-
+        checksum: https://cloud-images.ubuntu.com/focal/current/SHA256SUMS
       debian11:
         url: https://cloud.debian.org/images/cloud/bullseye/latest/
+        checksum: https://cloud.debian.org/images/cloud/bullseye/latest/SHA512SUMS
+        checksum_algo: sha512
       arch:
         url: https://mirror.pkgbuild.com/images/latest/
+        checksum_tmpl: "{}.SHA256"
       freebsd13:
         url: '{{ bsd_cloud_image }}/images/freebsd/13.0/freebsd-13.0-zfs.qcow2'
       netbsd9:
@@ -23,38 +33,59 @@
         url: '{{ bsd_cloud_image }}/images/openbsd/7.0/2021-12-11/openbsd-7.0.qcow2'
       dragonflybsd6:
         url: '{{ bsd_cloud_image }}/images/dragonflybsd/6.0.0/dragonflybsd-6.0.0-hammer2.qcow2'
+      alma8:
+        url: https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/
+        checksum: https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/CHECKSUM
+      # rhel8:
+      #   url: https://access.cdn.redhat.com/...
     regex: '[\w\.-]+(?:genericcloud|cloudimg|cloud-base)[\w\.-]+(?:\.qcow2|(?<!disk-kvm)\.img)'
     bsd_cloud_image: https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4c80864414a441e72dd2/bsd-cloud-image.org
   tasks:
     - delegate_to: localhost
-      when: item.1.url|default(item.0.1.url)|splitext|last != ".qcow2"
+      when: item.1.url|default(item.0.1.url)|urlsplit('path')|splitext|last != ".qcow2"
       block:
-        - uri:
+        - name: Find latest image
+          uri:
             url: '{{ item.1.url }}'
             return_content: true
           loop: '{{ distros|dictsort }}'
-          register: checksums
+          register: index_list
+          loop_control:
+            label: '{{ item.0 }}'
 
         - set_fact:
-            'img_url_{{ item.0.0 }}':
+            '{{ item.0.0 }}':
                 src: '{{ [base|trim("/"), latest]|join("/") }}'
-                dest: '{{ item.0.1.prefix|default("") ~ latest|splitext|first }}.qcow2'
+                dest: '{{ item.0.1.prefix|default("") ~ latest|urlsplit("path")|splitext|first }}.qcow2'
           vars:
             base: '{{ item.0.1.url if item.0.1.url|last == "/" else item.0.1.url|dirname }}'
             sixfour: '{{ item.1.content.splitlines()|select("search", "(amd64|x86_64)", ignorecase=true)|join("\n") }}'
             latest: '{{ sixfour|regex_findall(regex, ignorecase=true)|sort|last|regex_replace("\*", "") }}'
-          loop: '{{ distros|dictsort|zip(checksums.results) }}'
+          loop: '{{ distros|dictsort|zip(index_list.results) }}'
           loop_control:
-            label: '{{ item.0 }}'
+            label: '{{ item.0.0 }}'
 
     - set_fact:
-        'img_url_{{ item.0 }}':
+        '{{ item.0 }}':
           src: '{{ item.1.url }}'
-          dest: '{{ item.1.url|basename }}'
-      when: item.1.url|splitext|last == ".qcow2"
+          dest: '{{ item.1.url|urlsplit("path")|basename }}'
+      when: item.1.url|urlsplit('path')|splitext|last == ".qcow2"
       loop: '{{ distros|dictsort }}'
+      loop_control:
+        label: '{{ item.0 }}'
 
-    - get_url:
-        url: '{{ item.src }}'
-        dest: /mnt/data/cloudimg/{{ item.dest }}
-      loop: '{{ q("vars", *q("varnames", "^img_url_.+")) }}'
+    - name: Download image
+      threaded_get_url:
+        url: '{{ data.src }}'
+        dest: /mnt/data/cloudimg/{{ data.dest }}
+        threads: 8
+        timeout: 60
+        checksum: '{{ checksum }}'
+      loop: '{{ distros|dictsort }}'
+      loop_control:
+        label: '{{ item.0 }}'
+      vars:
+        checksum_algo: '{{ item.1.checksum_algo|default("sha256") }}'
+        has_checksum: '{{ [item.1.checksum, item.1.checksum_tmpl]|select("defined") }}'
+        checksum: '{{ omit if not has_checksum else checksum_algo ~ ":" ~ has_checksum.0.format(data.src) }}'
+        data: '{{ q("vars", item.0).0 }}'
