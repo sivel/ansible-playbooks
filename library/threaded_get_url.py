@@ -349,7 +349,7 @@ def main():
 
     url = module.params['url']
     parts = generic_urlparse(urlparse(url))
-    if parts.scheme.lower() not ('http', 'https'):
+    if parts.scheme.lower() not in ('http', 'https'):
         module.fail_json(
             msg='url can only be http or https'
         )
