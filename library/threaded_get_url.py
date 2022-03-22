@@ -276,7 +276,7 @@ def download(session, url, ranges, tmpdir):
             except Exception as e:
                 errors.append(f'{e}')
     end_stamp = datetime.datetime.utcnow()
-    elapsed = (end_stamp - start_stamp).total_seconds()
+    elapsed = round((end_stamp - start_stamp).total_seconds(), 2)
 
     return tmpfiles, elapsed, errors
 
@@ -363,6 +363,11 @@ def main():
         )
 
     dest = module.params['dest']
+    if os.path.isdir(dest):
+        dest = os.path.join(
+            dest,
+            os.path.basename(parts.path),
+        )
 
     result = {
         'url': url,
@@ -371,8 +376,8 @@ def main():
     }
 
     candidate_basenames = set((
+        os.path.basename(parts.path),
         os.path.basename(dest),
-        os.path.basename(url),
         '*',
     ))
 
@@ -418,6 +423,7 @@ def main():
         'ranges': ranges,
         'threads': len(ranges),
         'changed': True,
+        'size': ranges[-1][1],
     })
 
     tmpfiles, elapsed, errors = download(
@@ -427,6 +433,7 @@ def main():
         module.tmpdir,
     )
     result['elapsed'] = elapsed
+    result['speed'] = round(result['size'] * 8 / elapsed, 2)
 
     if errors:
         module.fail_json(
