@@ -167,30 +167,38 @@ from ansible.module_utils.urls import urllib_error
 from ansible.module_utils.urls import urlparse
 
 
-ALGO_FILE_CKSUM_RE = re.compile(r'^(\S+) \(([^\)]+)\) = (\S+)$', flags=re.M)
+OPENSSL_FILE_CKSUM_RE = re.compile(r'^(\S+) ?\(([^\)]+)\) ?= ?(\S+)$', flags=re.M)
 
 
 def parse_checksum_file(contents):
     file_map = {}
 
+    # Strip signature
     if contents.startswith('-----BEGIN PGP SIGNED MESSAGE-----'):
         idx = contents.index('-----BEGIN PGP SIGNATURE-----')
         contents = contents[34:idx]
 
     count = 0
     for line in contents.splitlines():
+        # Ignore:
+        #  1. empty lines
+        #  2. comments
+        #  3. openssl ``Hash:`` lines
         if not line.strip() or line[0] == '#' or line.startswith('Hash:'):
             continue
         count += 1
-        if (match := ALGO_FILE_CKSUM_RE.match(line)):
+        if (match := OPENSSL_FILE_CKSUM_RE.match(line)):
+            # openssl format
             file_map[match.group(2)] = match.group(3)
             continue
         elif len(line.split()) == 1:
+            # non-standard checksum file with only a checksum and no filenames
             if count > 1:
                 raise ValueError('too many single checksums')
             file_map['*'] = line
             continue
         elif len(line.split()) == 2:
+            # BSD checksum format
             checksum, filename = line.split()
             if filename[0] == '*':
                 filename = os.path.basename(filename[1:])
