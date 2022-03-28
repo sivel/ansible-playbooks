@@ -13,7 +13,7 @@
         checksum: https://cloud.centos.org/centos/9-stream/x86_64/images/CHECKSUM
       fedora35:
         url: https://download.fedoraproject.org/pub/fedora/linux/releases/35/Cloud/x86_64/images/
-        checksum: https://ftp-chi.osuosl.org/pub/fedora/linux/releases/35/Cloud/x86_64/images/Fedora-Cloud-35-1.2-x86_64-CHECKSUM
+        checksum: https://download.fedoraproject.org/pub/fedora/linux/releases/35/Cloud/x86_64/images/Fedora-Cloud-35-1.2-x86_64-CHECKSUM
       ubuntu2004:
         url: https://cloud-images.ubuntu.com/focal/current/
         prefix: ubuntu-
@@ -36,7 +36,12 @@
       alma8:
         url: https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/
         checksum: https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/CHECKSUM
+      rocky8:
+        url: https://download.rockylinux.org/pub/rocky/8/images/
+        checksum: https://download.rockylinux.org/pub/rocky/8/images/CHECKSUM
       # rhel8:
+      #   url: https://access.cdn.redhat.com/...
+      # rhel9:
       #   url: https://access.cdn.redhat.com/...
     regex: '[\w\.-]+(?:genericcloud|cloudimg|cloud-base)[\w\.-]+(?:\.qcow2|(?<!disk-kvm)\.img)'
     bsd_cloud_image: https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4c80864414a441e72dd2/bsd-cloud-image.org
@@ -60,7 +65,8 @@
           vars:
             base: '{{ item.0.1.url if item.0.1.url|last == "/" else item.0.1.url|dirname }}'
             sixfour: '{{ item.1.content.splitlines()|select("search", "(amd64|x86_64)", ignorecase=true)|join("\n") }}'
-            latest: '{{ sixfour|regex_findall(regex, ignorecase=true)|sort|last|regex_replace("\*", "") }}'
+            all_versions: '{{ sixfour|regex_findall(regex, ignorecase=true)|reject("contains", "latest")|sort|regex_replace("\*", "") }}'
+            latest: '{{ all_versions|last }}'
           loop: '{{ distros|dictsort|zip(index_list.results) }}'
           loop_control:
             label: '{{ item.0.0 }}'
@@ -89,3 +95,62 @@
         has_checksum: '{{ [item.1.checksum, item.1.checksum_tmpl]|select("defined") }}'
         checksum: '{{ omit if not has_checksum else checksum_algo ~ ":" ~ has_checksum.0.format(data.src) }}'
         data: '{{ q("vars", item.0).0 }}'
+      register: downloads
+
+    - name: Locate all cloudimg
+      find:
+        paths:
+          - /mnt/data/cloudimg
+        patterns:
+          - '*.qcow2'
+      register: qcow2
+
+    - vars:
+        downloaded: '{{ downloads.results|map(attribute="dest")|flatten|map("basename") }}'
+        to_remove: '{{ qcow2.files|map(attribute="path")|map("basename")|difference(downloaded)|reject("contains", "rhel") }}'
+        to_remove_names: '{{ to_remove|map("splitext")|map(attribute="0")|map("replace", "_", "-") }}'
+      block:
+        - when: to_remove is truthy
+          module_defaults:
+            uri:
+              headers:
+                Authorization: 'PVEAPIToken={{ pve_api_token }}'
+              validate_certs: false
+          block:
+            - name: Fetch list of existing proxmox VMs
+              uri:
+                url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu
+              register: vms
+
+            - vars:
+                to_remove_vmids: '{{ vms.json.data|selectattr("name", "in", to_remove_names)|map(attribute="vmid") }}'
+              block:
+                - name: Stop the VM
+                  uri:
+                    url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ vmid }}/status/stop
+                    method: POST
+                    status_code:
+                      - 200
+                      - 404
+                  changed_when: true
+                  loop: '{{ to_remove_vmids }}'
+                  loop_control:
+                    loop_var: vmid
+
+                - name: Destroy the VM
+                  uri:
+                    url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ vmid }}?purge=1
+                    method: DELETE
+                    status_code:
+                      - 200
+                      - 404
+                  changed_when: true
+                  loop: '{{ to_remove_vmids }}'
+                  loop_control:
+                    loop_var: vmid
+
+            - name: Remove old versions
+              file:
+                path: /mnt/data/cloudimg/{{ item }}
+                state: absent
+              loop: '{{ to_remove }}'
