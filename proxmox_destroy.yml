@@ -17,17 +17,13 @@
             url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu
           register: vms
 
-        - set_fact:
-            templates: '{{ vms.json.data|selectattr("template", "defined")|selectattr("template") }}'
-
         - pause:
             prompt: |
               Which VMIDs do you want to destroy?
 
-              {% for template in templates|sort(attribute='vmid') %}
-              {{ template.vmid }}: {{ template.name }}
+              {% for vm in vms.json.data|sort(attribute='vmid') %}
+              {{ vm.vmid }}: {{ vm.name }}
               {% endfor %}
-
           register: input_template
 
         - set_fact:
