@@ -10,6 +10,29 @@
       prompt: VMIDs
       private: false
   tasks:
+    - when: not vmids
+      block:
+        - name: Fetch list of existing proxmox VMs
+          uri:
+            url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu
+          register: vms
+
+        - set_fact:
+            templates: '{{ vms.json.data|selectattr("template", "defined")|selectattr("template") }}'
+
+        - pause:
+            prompt: |
+              Which VMIDs do you want to destroy?
+
+              {% for template in templates|sort(attribute='vmid') %}
+              {{ template.vmid }}: {{ template.name }}
+              {% endfor %}
+
+          register: input_template
+
+        - set_fact:
+            vmids: '{{ input_template.user_input }}'
+
     - name: Stop the VM
       uri:
         url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ vmid }}/status/stop
