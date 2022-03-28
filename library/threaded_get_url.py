@@ -225,7 +225,7 @@ def get_range(session, url, threads, last_mod_time):
         r.close()
 
     if r.code != 206:
-        return [(0, r.getheader('content-length'))]
+        return [(0, int(r.getheader('content-length')))]
 
     content_length = int(r.getheader('content-range').split('/')[1])
     chunk_size = content_length // threads
@@ -447,7 +447,7 @@ def main():
     if module.params['checksum']:
         destination_checksum = module.digest_from_file(tmpfile, algorithm)
         if destination_checksum != checksum:
-            module.fail_json(msg="Checksum mismatch")
+            module.fail_json(msg="Checksum mismatch", expected=checksum, actual=destination_checksum)
 
     module.atomic_move(
         tmpfile,
