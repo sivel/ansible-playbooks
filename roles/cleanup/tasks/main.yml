@@ -23,13 +23,16 @@
     remove: yes
     force: yes
   loop:
-    - ubuntu
     - vagrant
-    - pi
     - admin
+    - pi
+    - ec2-user
     - centos
-    - debian
     - cloud-user
+    - rocky
+    - almalinux
+    - ubuntu
+    - debian
     - freebsd
     - netbsd
     - openbsd
