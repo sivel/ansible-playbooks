@@ -105,52 +105,60 @@
           - '*.qcow2'
       register: qcow2
 
-    - vars:
-        downloaded: '{{ downloads.results|map(attribute="dest")|flatten|map("basename") }}'
-        to_remove: '{{ qcow2.files|map(attribute="path")|map("basename")|difference(downloaded)|reject("contains", "rhel") }}'
+    - set_fact:
+        to_remove: '{{ to_remove }}'
         to_remove_names: '{{ to_remove|map("splitext")|map(attribute="0")|map("replace", "_", "-") }}'
+        changed_downloaded: '{{ changed_downloaded }}'
+        changed_downloaded_names: '{{ changed_downloaded|map("splitext")|map(attribute="0")|map("replace", "_", "-") }}'
+      vars:
+        downloaded: '{{ downloads.results|map(attribute="dest")|map("basename") }}'
+        changed_downloaded: '{{ downloads.results|select("changed")|map(attribute="dest")|map("basename") }}'
+        to_remove: '{{ qcow2.files|map(attribute="path")|map("basename")|difference(downloaded)|reject("contains", "rhel") }}'
+
+    - when: downloads is changed
+      module_defaults:
+        uri:
+          headers:
+            Authorization: 'PVEAPIToken={{ pve_api_token }}'
+          validate_certs: false
       block:
-        - when: to_remove is truthy
-          module_defaults:
-            uri:
-              headers:
-                Authorization: 'PVEAPIToken={{ pve_api_token }}'
-              validate_certs: false
-          block:
-            - name: Fetch list of existing proxmox VMs
-              uri:
-                url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu
-              register: vms
+        - name: Fetch list of existing proxmox VMs
+          uri:
+            url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu
+          register: vms
 
-            - vars:
-                to_remove_vmids: '{{ vms.json.data|selectattr("name", "in", to_remove_names)|map(attribute="vmid") }}'
-              block:
-                - name: Stop the VM
-                  uri:
-                    url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ vmid }}/status/stop
-                    method: POST
-                    status_code:
-                      - 200
-                      - 404
-                  changed_when: true
-                  loop: '{{ to_remove_vmids }}'
-                  loop_control:
-                    loop_var: vmid
+        - set_fact:
+            to_remove_vmids: '{{ select_to_remove_names + select_changed_downloaded_names }}'
+          vars:
+            select_to_remove_names: '{{ vms.json.data|selectattr("name", "in", to_remove_names)|map(attribute="vmid") }}'
+            select_changed_downloaded_names: '{{ vms.json.data|selectattr("name", "in", changed_downloaded_names)|map(attribute="vmid") }}'
 
-                - name: Destroy the VM
-                  uri:
-                    url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ vmid }}?purge=1
-                    method: DELETE
-                    status_code:
-                      - 200
-                      - 404
-                  changed_when: true
-                  loop: '{{ to_remove_vmids }}'
-                  loop_control:
-                    loop_var: vmid
+        - name: Stop the VM
+          uri:
+            url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ vmid }}/status/stop
+            method: POST
+            status_code:
+              - 200
+              - 404
+          changed_when: true
+          loop: '{{ to_remove_vmids }}'
+          loop_control:
+            loop_var: vmid
 
-            - name: Remove old versions
-              file:
-                path: /mnt/data/cloudimg/{{ item }}
-                state: absent
-              loop: '{{ to_remove }}'
+        - name: Destroy the VM
+          uri:
+            url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ vmid }}?purge=1
+            method: DELETE
+            status_code:
+              - 200
+              - 404
+          changed_when: true
+          loop: '{{ to_remove_vmids }}'
+          loop_control:
+            loop_var: vmid
+
+    - name: Remove old versions
+      file:
+        path: /mnt/data/cloudimg/{{ item }}
+        state: absent
+      loop: '{{ to_remove }}'
