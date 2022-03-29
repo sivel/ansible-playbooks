@@ -115,7 +115,7 @@
         changed_downloaded: '{{ downloads.results|select("changed")|map(attribute="dest")|map("basename") }}'
         to_remove: '{{ qcow2.files|map(attribute="path")|map("basename")|difference(downloaded)|reject("contains", "rhel") }}'
 
-    - when: downloads is changed
+    - when: downloads is changed or to_remove is truthy
       module_defaults:
         uri:
           headers:
