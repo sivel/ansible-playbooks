@@ -14,3 +14,6 @@ ssh_authorized_keys:
 runcmd:
   - systemctl start qemu-guest-agent || true
   - /usr/local/etc/rc.d/qemu-guest-agent onestart || true
+rh_subscription:
+  username: '{{ rh_username }}'
+  password: '{{ rh_password }}'

@@ -162,3 +162,5 @@
         path: /mnt/data/cloudimg/{{ item }}
         state: absent
       loop: '{{ to_remove }}'
+
+- import_playbook: proxmox_templates.yml
