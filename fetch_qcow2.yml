@@ -39,11 +39,14 @@
       rocky8:
         url: https://download.rockylinux.org/pub/rocky/8/images/
         checksum: https://download.rockylinux.org/pub/rocky/8/images/CHECKSUM
+      amazonlinux:
+        url: https://cdn.amazonlinux.com/os-images/latest/kvm/
+        checksum: https://cdn.amazonlinux.com/os-images/latest/kvm/SHA256SUMS
       # rhel8:
       #   url: https://access.cdn.redhat.com/...
       # rhel9:
       #   url: https://access.cdn.redhat.com/...
-    regex: '[\w\.-]+(?:genericcloud|cloudimg|cloud-base)[\w\.-]+(?:\.qcow2|(?<!disk-kvm)\.img)'
+    regex: '[\w\.-]+(?:genericcloud|cloudimg|cloud-base|kvm)[\w\.-]+(?:\.qcow2|(?<!disk-kvm)\.img)'
     bsd_cloud_image: https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4c80864414a441e72dd2/bsd-cloud-image.org
   tasks:
     - delegate_to: localhost
@@ -64,9 +67,10 @@
                 dest: '{{ item.0.1.prefix|default("") ~ latest|urlsplit("path")|splitext|first }}.qcow2'
           vars:
             base: '{{ item.0.1.url if item.0.1.url|last == "/" else item.0.1.url|dirname }}'
-            sixfour: '{{ item.1.content.splitlines()|select("search", "(amd64|x86_64)", ignorecase=true)|join("\n") }}'
-            all_versions: '{{ sixfour|regex_findall(regex, ignorecase=true)|reject("contains", "latest")|sort|regex_replace("\*", "") }}'
-            latest: '{{ all_versions|last }}'
+            all_matches: '{{ item.1.content|regex_findall(regex, ignorecase=true)|reject("contains", "latest")|unique }}'
+            sixfour: '{{ all_matches|select("search", "(amd64|x86_64)", ignorecase=true) }}'
+            no_uefi: '{{ sixfour|reject("search", "uefi", ignorecase=true) }}'
+            latest: '{{ no_uefi|sort|last }}'
           loop: '{{ distros|dictsort|zip(index_list.results) }}'
           loop_control:
             label: '{{ item.0.0 }}'
