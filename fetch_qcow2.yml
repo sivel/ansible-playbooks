@@ -42,11 +42,20 @@
       amazonlinux:
         url: https://cdn.amazonlinux.com/os-images/latest/kvm/
         checksum: https://cdn.amazonlinux.com/os-images/latest/kvm/SHA256SUMS
+      opensuse15:
+        url: https://download.opensuse.org/repositories/Cloud:/Images:/Leap_15.3/images/
+        checksum_tmpl: "{}.sha256"
       # rhel8:
       #   url: https://access.cdn.redhat.com/...
       # rhel9:
       #   url: https://access.cdn.redhat.com/...
-    regex: '[\w\.-]+(?:genericcloud|cloudimg|cloud-base|kvm)[\w\.-]+(?:\.qcow2|(?<!disk-kvm)\.img)'
+    weights:
+      - nocloud
+      - kvm
+      - cloud-base
+      - cloudimg
+      - genericcloud
+    regex: '[\w\.-]+(?:genericcloud|cloudimg|cloud-base|kvm|nocloud)[\w\.-]+(?:\.qcow2|(?<!disk-kvm)\.img)'
     bsd_cloud_image: https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4c80864414a441e72dd2/bsd-cloud-image.org
   tasks:
     - delegate_to: localhost
@@ -70,7 +79,7 @@
             all_matches: '{{ item.1.content|regex_findall(regex, ignorecase=true)|reject("contains", "latest")|unique }}'
             sixfour: '{{ all_matches|select("search", "(amd64|x86_64)", ignorecase=true) }}'
             no_uefi: '{{ sixfour|reject("search", "uefi", ignorecase=true) }}'
-            latest: '{{ no_uefi|sort|last }}'
+            latest: '{{ no_uefi|weight_sort(weights)|last }}'
           loop: '{{ distros|dictsort|zip(index_list.results) }}'
           loop_control:
             label: '{{ item.0.0 }}'
