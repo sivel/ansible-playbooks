@@ -99,6 +99,7 @@
           net0: 'bridge=vmbr0,model=virtio,firewall=1'
           agent: 'enabled=1'
           cpu: host
+          serial0: socket
         body_format: form-urlencoded
       delegate_to: localhost
       changed_when: true
