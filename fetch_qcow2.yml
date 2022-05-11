@@ -1,4 +1,4 @@
-- hosts: vivo
+- hosts: localhost
   gather_facts: false
   vars:
     distros:
@@ -52,6 +52,9 @@
       alma8:
         url: https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/
         checksum: https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/CHECKSUM
+      alma9:
+        url: https://repo.almalinux.org/almalinux/9/cloud/x86_64/images/
+        checksum: https://repo.almalinux.org/almalinux/9/cloud/x86_64/images/CHECKSUM
       rocky8:
         url: https://download.rockylinux.org/pub/rocky/8/images/
         checksum: https://download.rockylinux.org/pub/rocky/8/images/CHECKSUM
@@ -65,6 +68,24 @@
       #   url: https://access.cdn.redhat.com/...
       # rhel9:
       #   url: https://access.cdn.redhat.com/...
+    bsd_cloud_image: https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4c80864414a441e72dd2/bsd-cloud-image.org
+  tasks:
+    - name: Create inventory for distros
+      add_host:
+        name: '{{ item.0 }}'
+        groups:
+          - qcow2
+        url: '{{ item.1.url }}'
+        checksum_algo: '{{ item.1.checksum_algo|default("sha256") }}'
+        prefix: '{{ item.1.prefix|default(omit) }}'
+        checksum: '{{ ([item.1.checksum, item.1.checksum_tmpl]|select("defined") or [None])|first }}'
+      loop: '{{ distros|dictsort }}'
+      loop_control:
+        label: '{{ item.0 }}'
+
+- hosts: qcow2
+  gather_facts: false
+  vars:
     weights:
       - nocloud
       - kvm
@@ -72,60 +93,47 @@
       - cloudimg
       - genericcloud
     regex: '[\w\.-]+(?:genericcloud|cloudimg|cloud-base|kvm|nocloud)[\w\.-]+(?:\.qcow2|(?<!disk-kvm)\.img)'
-    bsd_cloud_image: https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4c80864414a441e72dd2/bsd-cloud-image.org
   tasks:
-    - delegate_to: localhost
-      when: item.1.url|default(item.0.1.url)|urlsplit('path')|splitext|last != ".qcow2"
+    - when: url|urlsplit('path')|splitext|last not in [".qcow2", ".img"]
       block:
-        - name: Find latest image
+        - name: Fetch index
           uri:
-            url: '{{ item.1.url }}'
+            url: '{{ url }}'
             return_content: true
-          loop: '{{ distros|dictsort }}'
           register: index_list
-          loop_control:
-            label: '{{ item.0 }}'
+          delegate_to: localhost
 
-        - set_fact:
-            '{{ item.0.0 }}':
-                src: '{{ [base|trim("/"), latest]|join("/") }}'
-                dest: '{{ item.0.1.prefix|default("") ~ latest|urlsplit("path")|splitext|first }}.qcow2'
+        - name: Find the latest image
+          set_fact:
+            qcow2_src: '{{ [base|trim("/"), latest]|join("/") }}'
+            qcow2_dest: '{{ prefix|default("") ~ latest|urlsplit("path")|splitext|first }}.qcow2'
           vars:
-            base: '{{ item.0.1.url if item.0.1.url|last == "/" else item.0.1.url|dirname }}'
-            all_matches: '{{ item.1.content|regex_findall(regex, ignorecase=true)|reject("contains", "latest")|unique }}'
+            base: '{{ url if url|last == "/" else url|dirname }}'
+            all_matches: '{{ index_list.content|regex_findall(regex, ignorecase=true)|reject("contains", "latest")|unique }}'
             sixfour: '{{ all_matches|select("search", "(amd64|x86_64)", ignorecase=true) }}'
             no_uefi: '{{ sixfour|reject("search", "uefi", ignorecase=true) }}'
             latest: '{{ no_uefi|weight_sort(weights)|last }}'
-          loop: '{{ distros|dictsort|zip(index_list.results) }}'
-          loop_control:
-            label: '{{ item.0.0 }}'
 
-    - set_fact:
-        '{{ item.0 }}':
-          src: '{{ item.1.url }}'
-          dest: '{{ item.1.url|urlsplit("path")|basename }}'
-      when: item.1.url|urlsplit('path')|splitext|last == ".qcow2"
-      loop: '{{ distros|dictsort }}'
-      loop_control:
-        label: '{{ item.0 }}'
+    - name: Set facts for explicit urls
+      set_fact:
+        qcow2_src: '{{ url }}'
+        qcow2_dest: '{{ url|urlsplit("path")|basename|splitext|first }}.qcow2'
+      when: url|urlsplit('path')|splitext|last in [".qcow2", ".img"]
 
     - name: Download image
       threaded_get_url:
-        url: '{{ data.src }}'
-        dest: /mnt/data/cloudimg/{{ data.dest }}
+        url: '{{ qcow2_src }}'
+        dest: /mnt/data/cloudimg/{{ qcow2_dest }}
         threads: 8
         timeout: 60
-        checksum: '{{ checksum }}'
-      loop: '{{ distros|dictsort }}'
-      loop_control:
-        label: '{{ item.0 }}'
-      vars:
-        checksum_algo: '{{ item.1.checksum_algo|default("sha256") }}'
-        has_checksum: '{{ [item.1.checksum, item.1.checksum_tmpl]|select("defined") }}'
-        checksum: '{{ omit if not has_checksum else checksum_algo ~ ":" ~ has_checksum.0.format(data.src) }}'
-        data: '{{ q("vars", item.0).0 }}'
+        checksum: '{{ omit if not checksum else checksum_algo ~ ":" ~ checksum.format(qcow2_src) }}'
       register: downloads
+      throttle: 1
+      delegate_to: '{{ groups.vivo|first }}'
 
+- hosts: vivo
+  gather_facts: false
+  tasks:
     - name: Locate all cloudimg
       find:
         paths:
@@ -134,29 +142,33 @@
           - '*.qcow2'
       register: qcow2
 
-    - set_fact:
+    - name: Set facts for images to clean up
+      set_fact:
         to_remove: '{{ to_remove }}'
         to_remove_names: '{{ to_remove|map("splitext")|map(attribute="0")|map("replace", "_", "-") }}'
         changed_downloaded: '{{ changed_downloaded }}'
         changed_downloaded_names: '{{ changed_downloaded|map("splitext")|map(attribute="0")|map("replace", "_", "-") }}'
       vars:
-        downloaded: '{{ downloads.results|map(attribute="dest")|map("basename") }}'
-        changed_downloaded: '{{ downloads.results|select("changed")|map(attribute="dest")|map("basename") }}'
+        downloads: '{{ hostvars|dictsort|selectattr("1.downloads", "defined")|map(attribute="1.downloads") }}'
+        downloaded: '{{ downloads|map(attribute="dest")|map("basename") }}'
+        changed_downloaded: '{{ downloads|select("changed")|map(attribute="dest")|map("basename") }}'
         to_remove: '{{ qcow2.files|map(attribute="path")|map("basename")|difference(downloaded)|reject("contains", "rhel") }}'
 
-    - when: downloads is changed or to_remove is truthy
+    - when: changed_downloaded or to_remove is truthy
       module_defaults:
         uri:
           headers:
             Authorization: 'PVEAPIToken={{ pve_api_token }}'
           validate_certs: false
+      delegate_to: localhost
       block:
         - name: Fetch list of existing proxmox VMs
           uri:
             url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu
           register: vms
 
-        - set_fact:
+        - name: Determine which templates need replaced
+          set_fact:
             to_remove_vmids: '{{ select_to_remove_names + select_changed_downloaded_names }}'
           vars:
             select_to_remove_names: '{{ vms.json.data|selectattr("name", "in", to_remove_names)|map(attribute="vmid") }}'
