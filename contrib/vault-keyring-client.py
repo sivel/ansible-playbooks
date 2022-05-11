@@ -104,11 +104,11 @@ def build_arg_parser():
 
 def main():
     config_manager = ConfigManager()
-    username = config_manager.data.get_setting('vault.username')
+    username = config_manager.get_configuration_definition('vault.username')
     if not username:
         username = getpass.getuser()
 
-    keyname = config_manager.data.get_setting('vault.keyname')
+    keyname = config_manager.get_configuration_definition('vault.keyname')
     if not keyname:
         keyname = 'ansible'
 
