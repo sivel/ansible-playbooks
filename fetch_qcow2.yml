@@ -14,6 +14,9 @@
       fedora35:
         url: https://download.fedoraproject.org/pub/fedora/linux/releases/35/Cloud/x86_64/images/
         checksum: https://download.fedoraproject.org/pub/fedora/linux/releases/35/Cloud/x86_64/images/Fedora-Cloud-35-1.2-x86_64-CHECKSUM
+      fedora36:
+        url: https://download.fedoraproject.org/pub/fedora/linux/releases/36/Cloud/x86_64/images/
+        checksum: https://getfedora.org/static/checksums/36/images/Fedora-Cloud-36-1.5-x86_64-CHECKSUM
       ubuntu2204:
         url: https://cloud-images.ubuntu.com/jammy/current/
         prefix: ubuntu-22.04-
