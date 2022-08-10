@@ -20,6 +20,7 @@
       - vim-nox
       - ntp
       - screen
+      - curl
     state: latest
     update_cache: yes
     cache_valid_time: 86400
@@ -39,7 +40,6 @@
   shell: curl -s https://bootstrap.pypa.io/get-pip.py | python3
   args:
     creates: /usr/local/bin/pip3
-    warn: no
 
 - name: Update python modules from pypi
   pip:
