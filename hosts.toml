@@ -8,6 +8,7 @@ children = [
     "porky",
     "vpn",
     "binars",
+    "q",
 ]
 
 [overseer]
@@ -43,6 +44,9 @@ children = [
 
 [binars.hosts]
 "binars.noc.sivel.net" = {}
+
+[q.hosts]
+"q.noc.sivel.net" = {}
 
 [nas.hosts]
 "nas.noc.sivel.net" = { ansible_python_interpreter = "/usr/local/bin/python3", ansible_scp_if_ssh = true }
