@@ -1,10 +1,17 @@
 - hosts: vivo
   gather_facts: false
+  vars_prompt:
+    - name: rh_username
+      prompt: What is your Red Hat username?
+      private: no
+
+    - name: rh_password
+      prompt: What is your Red Hat password?
+      private: yes
   tasks:
     - name: Locate all build images
       find:
         paths:
-          - /mnt/data/robox/output
           - /mnt/data/cloudimg
         recurse: yes
         patterns:
@@ -25,13 +32,15 @@
         name: '{{ item.path|basename|splitext|first|replace("_", "-") }}'
 
     - name: Copy cloud config to snippets
-      copy:
-        src: files/vivo/user.yaml
+      template:
+        src: files/vivo/user.yaml.j2
         dest: /var/lib/vz/snippets/user.yaml
       become: true
+      when: (rh_username, rh_password) is all
 
 - hosts: localhost
   gather_facts: false
+  order: sorted
   tasks:
     - module_defaults:
         uri:
