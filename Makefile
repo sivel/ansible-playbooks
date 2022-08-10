@@ -7,5 +7,9 @@ qcow2:
 proxmox_destroy proxmox_clone proxmox_templates src:
 	ANSIBLE_BECOME_ASK_PASS=0 ansible-playbook $@.yml
 
+.PHONY: clone destroy templates
+destroy clone templates:
+	ANSIBLE_BECOME_ASK_PASS=0 ansible-playbook proxmox_$@.yml
+
 .DEFAULT:
 	ansible-playbook -v $@.yml
