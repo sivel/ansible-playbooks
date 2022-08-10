@@ -14,10 +14,11 @@
     - name: Fetch {{ package.name }}
       get_url:
         url: '{{ package.url }}'
-        dest: '{{ src }}/{{ package.filename|default(package.url|basename) }}'
+        dest: '{{ src }}/{{ package.tarball_prefix|default("") }}{{ package.filename|default(package.url|basename) }}'
       register: get_package
 
     - when: get_package is changed
+      environment: '{{ package.environment|default({}) }}'
       block:
         - name: Extract {{ package.name }}
           command: tar xzvf {{ get_package.dest }}
@@ -29,12 +30,45 @@
             extract_package_output: '{{ extract_package.stderr_lines if extract_package.stderr_lines else extract_package.stdout_lines }}'
             package_dir: '{{ src }}/{{ extract_package_output.0.split()|last }}'
           block:
+            - get_url:
+                url: '{{ item.url }}'
+                dest: '{{ package_dir }}/{{ item.url|basename }}'
+              loop: '{{ package.patches|default([]) }}'
+
+            - name: Apply patches {{ package.name }}
+              shell: patch -p{{ item.strip|default(1) }} -i {{ item.url|basename }}
+              args:
+                chdir: '{{ package_dir }}'
+              loop: '{{ package.patches|default([]) }}'
+
+
+            - name: Pre configure {{ package.name }}
+              shell: '{{ package.pre_configure }}'
+              args:
+                chdir: '{{ package_dir }}'
+              when: package.pre_configure is defined
+
             - name: Configure {{ package.name }}
               shell: '{{ package.configure|default(common_configure ~ " " ~ package.extra_configure|default("")) }}'
               args:
                 chdir: '{{ package_dir }}'
+              when: package.configure is not false
 
-            - name: Build and install {{ package.name }}
-              shell: '{{ package.make|default("make") }} && {{ package.make_install|default("make install") }}'
+            - name: Build {{ package.name }}
+              shell: '{{ package.make|default("make") }}'
               args:
                 chdir: '{{ package_dir }}'
+
+            - name: Install {{ package.name }}
+              shell: '{{ package.make_install|default("make install") }}'
+              args:
+                chdir: '{{ package_dir }}'
+              when: package.make_install is not false
+
+            - name: Copy {{ package.name }} binary
+              copy:
+                src: '{{ package_dir }}{{ package.bin_path }}'
+                dest: '{{ prefix }}/bin/{{ package.bin_path|basename }}'
+                mode: '0755'
+                remote_src: true
+              when: package.bin_path is defined
