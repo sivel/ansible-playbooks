@@ -5,6 +5,7 @@
       centos7:
         url: https://cloud.centos.org/centos/7/images/
         # checksum: https://cloud.centos.org/centos/7/images/sha256sum.txt
+        pattern: 'CentOS-7-x86_64-GenericCloud-\d+.qcow2'
       centos_stream8:
         url: https://cloud.centos.org/centos/8-stream/x86_64/images/
         checksum: https://cloud.centos.org/centos/8-stream/x86_64/images/CHECKSUM
@@ -21,10 +22,6 @@
         url: https://cloud-images.ubuntu.com/jammy/current/
         prefix: ubuntu-22.04-
         checksum: https://cloud-images.ubuntu.com/jammy/current/SHA256SUMS
-      ubuntu2110:
-        url: https://cloud-images.ubuntu.com/impish/current/
-        prefix: ubuntu-21.10-
-        checksum: https://cloud-images.ubuntu.com/impish/current/SHA256SUMS
       ubuntu2004:
         url: https://cloud-images.ubuntu.com/focal/current/
         prefix: ubuntu-20.04-
@@ -43,15 +40,20 @@
         checksum_algo: sha512
       arch:
         url: https://mirror.pkgbuild.com/images/latest/
+        pattern: 'Arch-Linux-x86_64-cloudimg-[\d\.]+\.qcow2'
         checksum_tmpl: "{}.SHA256"
       freebsd13:
         url: '{{ bsd_cloud_image }}/images/freebsd/13.0/freebsd-13.0-zfs.qcow2'
+        checksum: fb0c9e21d486e8330a22bf7096c92f538e4e7573141f0ff0d0f1ae78baa2357d
       netbsd9:
         url: '{{ bsd_cloud_image }}/images/netbsd/9.2/2021-12-11/netbsd-9.2.qcow2'
+        checksum: a5f6c1b548578628eafe6755da1758e22388f96fa3f2c89db2dc2f17140eeeff
       openbsd7:
         url: '{{ bsd_cloud_image }}/images/openbsd/7.0/2021-12-11/openbsd-7.0.qcow2'
+        checksum: e82e89d213bb478f472a6cf2a3405f862c6facc99fb6567f8defdf9d9cfd6c93
       dragonflybsd6:
         url: '{{ bsd_cloud_image }}/images/dragonflybsd/6.0.0/dragonflybsd-6.0.0-hammer2.qcow2'
+        checksum: 6203bd36f3a20a6ee0006169cca66cff6cbc09705b72e2b67e19c1f9d547a999
       alma8:
         url: https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/
         checksum: https://repo.almalinux.org/almalinux/8/cloud/x86_64/images/CHECKSUM
@@ -61,12 +63,17 @@
       rocky8:
         url: https://download.rockylinux.org/pub/rocky/8/images/
         checksum: https://download.rockylinux.org/pub/rocky/8/images/CHECKSUM
+      rocky9:
+        url: https://download.rockylinux.org/pub/rocky/9/images/x86_64/
+        checksum_tmpl: "{}.CHECKSUM"
       amazonlinux:
         url: https://cdn.amazonlinux.com/os-images/latest/kvm/
         checksum: https://cdn.amazonlinux.com/os-images/latest/kvm/SHA256SUMS
       opensuse15:
-        url: https://download.opensuse.org/repositories/Cloud:/Images:/Leap_15.3/images/
+        url: https://download.opensuse.org/repositories/Cloud:/Images:/Leap_15.4/images/
         checksum_tmpl: "{}.sha256"
+      # rhel7:
+      #   url: https://access.cdn.redhat.com/...
       # rhel8:
       #   url: https://access.cdn.redhat.com/...
       # rhel9:
@@ -82,20 +89,15 @@
         checksum_algo: '{{ item.1.checksum_algo|default("sha256") }}'
         prefix: '{{ item.1.prefix|default(omit) }}'
         checksum: '{{ ([item.1.checksum, item.1.checksum_tmpl]|select("defined") or [None])|first }}'
+        only64: '{{ item.1.only64|default(false) }}'
+        pattern: '{{ item.1.pattern|default(none) }}'
       loop: '{{ distros|dictsort }}'
       loop_control:
         label: '{{ item.0 }}'
 
-- hosts: qcow2
+- hosts: qcow2:&{{ limit|default('all') }}
   gather_facts: false
-  vars:
-    weights:
-      - nocloud
-      - kvm
-      - cloud-base
-      - cloudimg
-      - genericcloud
-    regex: '[\w\.-]+(?:genericcloud|cloudimg|cloud-base|kvm|nocloud)[\w\.-]+(?:\.qcow2|(?<!disk-kvm)\.img)'
+  order: sorted
   tasks:
     - when: url|urlsplit('path')|splitext|last not in [".qcow2", ".img"]
       block:
@@ -108,31 +110,37 @@
 
         - name: Find the latest image
           set_fact:
-            qcow2_src: '{{ [base|trim("/"), latest]|join("/") }}'
-            qcow2_dest: '{{ prefix|default("") ~ latest|urlsplit("path")|splitext|first }}.qcow2'
+            qcow2_src: '{{ url }}{{ latest.src }}'
+            qcow2_dest: '{{ prefix|default("") }}{{ latest.dest }}'
           vars:
-            base: '{{ url if url|last == "/" else url|dirname }}'
-            all_matches: '{{ index_list.content|regex_findall(regex, ignorecase=true)|reject("contains", "latest")|unique }}'
-            sixfour: '{{ all_matches|select("search", "(amd64|x86_64)", ignorecase=true) }}'
-            no_uefi: '{{ sixfour|reject("search", "uefi", ignorecase=true) }}'
-            latest: '{{ no_uefi|weight_sort(weights)|last }}'
+            latest: '{{ index_list.content|newest_image(sixfour=not only64, pattern=pattern) }}'
 
     - name: Set facts for explicit urls
       set_fact:
         qcow2_src: '{{ url }}'
-        qcow2_dest: '{{ url|urlsplit("path")|basename|splitext|first }}.qcow2'
+        qcow2_dest: '{{ latest.dest }}'
+      vars:
+        latest: '{{ url|newest_image(sixfour=not only64) }}'
       when: url|urlsplit('path')|splitext|last in [".qcow2", ".img"]
 
-    - name: Download image
-      threaded_get_url:
-        url: '{{ qcow2_src }}'
-        dest: /mnt/data/cloudimg/{{ qcow2_dest }}
-        threads: 8
-        timeout: 60
-        checksum: '{{ omit if not checksum else checksum_algo ~ ":" ~ checksum.format(qcow2_src) }}'
-      register: downloads
-      throttle: 1
-      delegate_to: '{{ groups.vivo|first }}'
+    - delegate_to: '{{ groups.vivo|first }}'
+      block:
+        - debug:
+            msg:
+              qcow2_src: '{{ qcow2_src }}'
+              qcow2_dest: '{{ qcow2_dest }}'
+          throttle: 1
+
+        - name: Download image
+          threaded_get_url:
+            url: '{{ qcow2_src }}'
+            dest: /mnt/data/cloudimg/{{ qcow2_dest }}
+            threads: 8
+            timeout: 60
+            checksum: '{{ omit if not checksum else checksum_algo ~ ":" ~ checksum.format(qcow2_src) }}'
+          register: downloads
+          # when: checksum_result is failed
+          throttle: 1
 
 - hosts: vivo
   gather_facts: false
@@ -145,19 +153,13 @@
           - '*.qcow2'
       register: qcow2
 
-    - name: Set facts for images to clean up
-      set_fact:
-        to_remove: '{{ to_remove }}'
-        to_remove_names: '{{ to_remove|map("splitext")|map(attribute="0")|map("replace", "_", "-") }}'
-        changed_downloaded: '{{ changed_downloaded }}'
-        changed_downloaded_names: '{{ changed_downloaded|map("splitext")|map(attribute="0")|map("replace", "_", "-") }}'
-      vars:
-        downloads: '{{ hostvars|dictsort|selectattr("1.downloads", "defined")|map(attribute="1.downloads") }}'
-        downloaded: '{{ downloads|map(attribute="dest")|map("basename") }}'
-        changed_downloaded: '{{ downloads|select("changed")|map(attribute="dest")|map("basename") }}'
-        to_remove: '{{ qcow2.files|map(attribute="path")|map("basename")|difference(downloaded)|reject("contains", "rhel") }}'
+    - set_fact:
+        updated_images: '{{ hostvars|select_updated_images(qcow2) }}'
 
-    - when: changed_downloaded or to_remove is truthy
+    - debug:
+        var: updated_images
+
+    - when: updated_images.remove_names is truthy
       module_defaults:
         uri:
           headers:
@@ -172,10 +174,7 @@
 
         - name: Determine which templates need replaced
           set_fact:
-            to_remove_vmids: '{{ select_to_remove_names + select_changed_downloaded_names }}'
-          vars:
-            select_to_remove_names: '{{ vms.json.data|selectattr("name", "in", to_remove_names)|map(attribute="vmid") }}'
-            select_changed_downloaded_names: '{{ vms.json.data|selectattr("name", "in", changed_downloaded_names)|map(attribute="vmid") }}'
+            to_remove_vmids: '{{ vms.json.data|selectattr("name", "in", updated_images.remove_names)|map(attribute="vmid") }}'
 
         - name: Stop the VM
           uri:
@@ -201,10 +200,24 @@
           loop_control:
             loop_var: vmid
 
+        - name: Wait for VM to be destroyed
+          uri:
+            url: https://vivo.noc.sivel.net:8006/api2/json/nodes/vivo/qemu/{{ vmid }}/status/current
+            method: GET
+            status_code:
+              - 500
+          loop: '{{ to_remove_vmids }}'
+          loop_control:
+            loop_var: vmid
+          register: destroy
+          until: destroy is successful
+          delay: 1
+          retries: 30
+
     - name: Remove old versions
       file:
         path: /mnt/data/cloudimg/{{ item }}
         state: absent
-      loop: '{{ to_remove }}'
+      loop: '{{ updated_images.remove_files }}'
 
 - import_playbook: proxmox_templates.yml

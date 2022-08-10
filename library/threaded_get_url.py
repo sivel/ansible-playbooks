@@ -149,10 +149,13 @@ EXAMPLES = r'''
     threads: 8
 '''
 
+import bz2
 import datetime
+import lzma
 import os
-import re
 import shutil
+import time
+import zlib
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 from tempfile import NamedTemporaryFile
@@ -160,6 +163,9 @@ from tempfile import mkstemp
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
+from ansible.module_utils.sivel import digest_from_file
+from ansible.module_utils.sivel import get_algo_checksum
+from ansible.module_utils.sivel import parse_checksum_file
 from ansible.module_utils.urls import Request
 from ansible.module_utils.urls import generic_urlparse
 from ansible.module_utils.urls import url_argument_spec
@@ -167,45 +173,19 @@ from ansible.module_utils.urls import urllib_error
 from ansible.module_utils.urls import urlparse
 
 
-OPENSSL_FILE_CKSUM_RE = re.compile(r'^(\S+) ?\(([^\)]+)\) ?= ?(\S+)$', flags=re.M)
-
-
-def parse_checksum_file(contents):
-    file_map = {}
-
-    # Strip signature
-    if contents.startswith('-----BEGIN PGP SIGNED MESSAGE-----'):
-        idx = contents.index('-----BEGIN PGP SIGNATURE-----')
-        contents = contents[34:idx]
-
-    count = 0
-    for line in contents.splitlines():
-        # Ignore:
-        #  1. empty lines
-        #  2. comments
-        #  3. openssl ``Hash:`` lines
-        if not line.strip() or line[0] == '#' or line.startswith('Hash:'):
-            continue
-        count += 1
-        if (match := OPENSSL_FILE_CKSUM_RE.match(line)):
-            # openssl format
-            file_map[match.group(2)] = match.group(3)
-            continue
-        elif len(line.split()) == 1:
-            # non-standard checksum file with only a checksum and no filenames
-            if count > 1:
-                raise ValueError('too many single checksums')
-            file_map['*'] = line
-            continue
-        elif len(line.split()) == 2:
-            # BSD checksum format
-            checksum, filename = line.split()
-            if filename[0] == '*':
-                filename = os.path.basename(filename[1:])
-            else:
-                filename = os.path.basename(filename)
-            file_map[filename] = checksum
-    return file_map
+def getcomptype(f):
+    pos = f.tell()
+    buf = f.read(32)
+    try:
+        if buf.startswith(b"\x1f\x8b\x08"):
+            return zlib
+        elif buf[0:3] == b"BZh" and buf[4:10] == b"1AY&SY":
+            return bz2
+        elif buf.startswith((b"\x5d\x00\x00\x80", b"\xfd7zXZ")):
+            return lzma
+        return None
+    finally:
+        f.seek(pos)
 
 
 def get_range(session, url, threads, last_mod_time):
@@ -282,37 +262,24 @@ def download(session, url, ranges, tmpdir):
 
 
 def stitch_files(tmpfiles, tmpdir):
+    comptype = None
     with NamedTemporaryFile(dir=tmpdir, delete=False) as dest_f:
-        for tmpfile in tmpfiles:
+        for i, tmpfile in enumerate(tmpfiles):
             with open(tmpfile, mode='rb') as tmp_f:
+                if i == 0:
+                    comptype = getcomptype(tmp_f)
                 shutil.copyfileobj(tmp_f, dest_f)
             os.unlink(tmpfile)
-    return dest_f.name
 
+    if comptype is None:
+        return dest_f.name
 
-def get_algo_checksum(session, data, candidates):
-    algorithm, checksum = data.split(':', 1)
+    with NamedTemporaryFile(dir=tmpdir, delete=False) as decomp_f:
+        with comptype.open(dest_f.name, mode='rb') as comp_f:
+            shutil.copyfileobj(comp_f, decomp_f)
+        os.unlink(dest_f.name)
 
-    if not checksum.isalnum():
-        try:
-            cksum_r = session.get(checksum)
-        except Exception as e:
-            raise ValueError(
-                f'Failed to fetch checksum file: {e}'
-            )
-
-        file_map = parse_checksum_file(to_native(cksum_r.read()))
-
-        for candidate in candidates:
-            if (checksum := file_map.get(candidate)):
-                break
-        else:
-            raise ValueError(
-                'Could not find checksum in checksum file for: '
-                ', '.join(candidates)
-            )
-
-    return algorithm, checksum
+    return decomp_f.name
 
 
 def main():
@@ -369,10 +336,13 @@ def main():
             os.path.basename(parts.path),
         )
 
+    timings = {}
+
     result = {
         'url': url,
         'dest': dest,
         'changed': False,
+        'timings': timings,
     }
 
     candidate_basenames = set((
@@ -383,11 +353,13 @@ def main():
 
     if module.params['checksum']:
         try:
+            s = time.time()
             algorithm, checksum = get_algo_checksum(
-                session,
                 module.params['checksum'],
                 candidate_basenames,
+                session=session,
             )
+            timings['get_algo_checksum'] = time.time() - s
         except ValueError as e:
             module.fail_json(
                 msg=f'{e}',
@@ -396,7 +368,9 @@ def main():
 
     if os.path.isfile(dest):
         if module.params['checksum'] and not module.params['force']:
-            destination_checksum = module.digest_from_file(dest, algorithm)
+            s = time.time()
+            destination_checksum = digest_from_file(dest, algorithm)
+            timings['digest_from_file'] = time.time() - s
             if destination_checksum == checksum:
                 module.exit_json(checksum=checksum, **result)
             last_mod_time = None
@@ -426,12 +400,14 @@ def main():
         'size': ranges[-1][1],
     })
 
+    s = time.time()
     tmpfiles, elapsed, errors = download(
         session,
         url,
         ranges,
         module.tmpdir,
     )
+    timings['download'] = time.time() - s
     result['elapsed'] = elapsed
     result['speed'] = round(result['size'] * 8 / elapsed, 2)
 
@@ -442,13 +418,18 @@ def main():
             **result
         )
 
+    s = time.time()
     tmpfile = stitch_files(tmpfiles, module.tmpdir)
+    timings['stitch_files'] = time.time() - s
 
     if module.params['checksum']:
-        destination_checksum = module.digest_from_file(tmpfile, algorithm)
+        s = time.time()
+        destination_checksum = digest_from_file(tmpfile, algorithm)
+        timings['digest_from_file2'] = time.time() - s
         if destination_checksum != checksum:
-            module.fail_json(msg="Checksum mismatch", expected=checksum, actual=destination_checksum)
+            module.fail_json(msg="Checksum mismatch", expected=checksum, actual=destination_checksum, **result)
 
+    s = time.time()
     module.atomic_move(
         tmpfile,
         dest,
@@ -460,6 +441,7 @@ def main():
         file_args,
         result['changed']
     )
+    timings['move'] = time.time() - s
 
     module.exit_json(**result)
 
