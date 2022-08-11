@@ -81,11 +81,16 @@
     - restart wireguard {{ wireguard_interface }}
 
 - name: Enable ip_forward
-  ansible.posix.sysctl:
-    name: net.ipv4.ip_forward
-    value: '1'
-    sysctl_set: yes
-    sysctl_file: /etc/sysctl.d/99-sysctl.conf
+  copy:
+    content: net.ipv4.ip_forward=1
+    dest: /etc/sysctl.d/20-net-ipv4-ip_forward.conf
+  register: ip_forward
+
+- name: Reload sysctl
+  systemd:
+    name: procps
+    state: reloaded
+  when: ip_forward is changed
 
 - name: Enable systemd unit
   systemd:

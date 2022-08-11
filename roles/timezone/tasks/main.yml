@@ -1,4 +1,11 @@
 ---
+- name: get the current timezone
+  command: timedatectl show
+  register: timezone_current
+  changed_when: false
+
 - name: set timezone to America/Chicago
-  community.general.timezone:
-    name: America/Chicago
+  command: timedatectl set-timezone {{ timezone }}
+  when: timezone_current.stdout_lines|select('match', 'Timezone=')|first|split('=')|last != timezone
+  vars:
+    timezone: America/Chicago

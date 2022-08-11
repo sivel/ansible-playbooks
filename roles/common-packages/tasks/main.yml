@@ -31,10 +31,16 @@
     state: started
     enabled: yes
 
+- name: Get editor alternatives
+  command: update-alternatives --query editor
+  register: editor_current
+  changed_when: false
+
 - name: Set vim-nox as the default editor
-  community.general.alternatives:
-    name: editor
-    path: /usr/bin/vim.nox
+  command: update-alternatives --set editor {{ editor }}
+  when: editor_current.stdout_lines|select('match', 'Value:')|first|split|last != editor
+  vars:
+    editor: /usr/bin/vim.nox
 
 - name: Install pip
   shell: curl -s https://bootstrap.pypa.io/get-pip.py | python3
