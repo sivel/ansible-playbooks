@@ -5,7 +5,7 @@
       centos7:
         url: https://cloud.centos.org/centos/7/images/
         # checksum: https://cloud.centos.org/centos/7/images/sha256sum.txt
-        pattern: 'CentOS-7-x86_64-GenericCloud-\d+.qcow2'
+        pattern: '(?P<href>CentOS-7-x86_64-GenericCloud-\d+.qcow2)'
       centos_stream8:
         url: https://cloud.centos.org/centos/8-stream/x86_64/images/
         checksum: https://cloud.centos.org/centos/8-stream/x86_64/images/CHECKSUM
@@ -40,7 +40,7 @@
         checksum_algo: sha512
       arch:
         url: https://mirror.pkgbuild.com/images/latest/
-        pattern: 'Arch-Linux-x86_64-cloudimg-[\d\.]+\.qcow2'
+        pattern: '(?P<href>Arch-Linux-x86_64-cloudimg-[\d\.]+\.qcow2)'
         checksum_tmpl: "{}.SHA256"
       freebsd13:
         url: '{{ bsd_cloud_image }}/images/freebsd/13.0/freebsd-13.0-zfs.qcow2'

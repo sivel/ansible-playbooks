@@ -10,9 +10,16 @@ import re
 from pathlib import Path
 from urllib.parse import urlparse
 
-QCOW2_RE = re.compile(
-    r'[\w\.-]+(?:genericcloud|cloudimg|cloud-base|kvm-legacy|kvm|nocloud)[\w\.-]*(?:\.qcow2|(?<!disk-kvm)\.img)',
-    flags=re.I
+QCOW2_RE = re.compile(r'''
+    href=["']
+    (?P<href>
+        [/\w\.-]+
+        (?:genericcloud|cloudimg|cloud-base|kvm-legacy|kvm|nocloud)
+        [/\w\.-]*
+        (?:\.qcow2|(?<!disk-kvm)\.img)
+    )
+    ["']''',
+    flags=re.I | re.X
 )
 SIXFOUR = re.compile('(amd64|x86_64)', flags=re.I)
 STRIP_EXTENSIONS = frozenset(('.bz', '.gz', '.xz', '.qcow2', '.img'))
@@ -58,7 +65,7 @@ def newest_image(text, sixfour=True, pattern=None):
             continue
         if sixfour and not SIXFOUR.search(m):
             continue
-        matches.add(m)
+        matches.add(os.path.basename(m))
 
     weighted = weight_sort(
         matches,
