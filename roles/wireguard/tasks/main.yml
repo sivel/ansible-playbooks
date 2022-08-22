@@ -89,7 +89,7 @@
 - name: Reload sysctl
   systemd:
     name: procps
-    state: reloaded
+    state: restarted
   when: ip_forward is changed
 
 - name: Enable systemd unit
