@@ -1,7 +1,6 @@
 ansible_connection: ssh
-ansible_ssh_args: -o ControlPersist=15m
+ansible_ssh_args: -C -o ControlMaster=auto -o ControlPersist=15m -o ServerAliveInterval=10s
 ansible_pipelining: true
-ansible_ssh_transfer_method: scp
 ansible_ssh_retries: 2
 ansible_host_key_checking: false
 ansible_ssh_timeout: 60
