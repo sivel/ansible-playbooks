@@ -8,6 +8,7 @@
 import hashlib
 import os
 import re
+import secrets
 from functools import partial
 
 from ansible.module_utils.common.text.converters import to_native
@@ -45,7 +46,9 @@ def get_algo_checksum(data, candidates, session=None):
                 f'Failed to fetch checksum file: {e}'
             )
 
-        file_map = parse_checksum_file(to_native(cksum_r.read()))
+        file_map, token_candidate = parse_checksum_file(to_native(cksum_r.read()))
+        if token_candidate:
+            candidates.append(token_candidate)
 
         for candidate in candidates:
             if (checksum := file_map.get(candidate)):
@@ -62,6 +65,7 @@ def get_algo_checksum(data, candidates, session=None):
 
 def parse_checksum_file(contents):
     file_map = {}
+    token = None
 
     # Strip signature
     if contents.startswith('-----BEGIN PGP SIGNED MESSAGE-----'):
@@ -85,7 +89,8 @@ def parse_checksum_file(contents):
             # non-standard checksum file with only a checksum and no filenames
             if count > 1:
                 raise ValueError('too many single checksums')
-            file_map['*'] = line
+            token = secrets.token_urlsafe(12)
+            file_map[token] = line
             continue
         elif len(line.split()) == 2:
             # BSD checksum format
@@ -95,4 +100,4 @@ def parse_checksum_file(contents):
             else:
                 filename = os.path.basename(filename)
             file_map[filename] = checksum
-    return file_map
+    return file_map, token

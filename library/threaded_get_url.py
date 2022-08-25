@@ -162,10 +162,8 @@ from tempfile import NamedTemporaryFile
 from tempfile import mkstemp
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.common.text.converters import to_native
 from ansible.module_utils.sivel import digest_from_file
 from ansible.module_utils.sivel import get_algo_checksum
-from ansible.module_utils.sivel import parse_checksum_file
 from ansible.module_utils.urls import Request
 from ansible.module_utils.urls import generic_urlparse
 from ansible.module_utils.urls import url_argument_spec
@@ -348,7 +346,6 @@ def main():
     candidate_basenames = set((
         os.path.basename(parts.path),
         os.path.basename(dest),
-        '*',
     ))
 
     if module.params['checksum']:
