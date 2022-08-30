@@ -10,7 +10,7 @@ $(NOBECOME):
 
 PROXMOX = clone destroy templates
 .PHONY: $(PROXMOX)
-$PROXMOX:
+$(PROXMOX):
 	ANSIBLE_BECOME_ASK_PASS=0 ansible-playbook proxmox_$@.yml
 
 DEFAULT = $(filter-out qcow2 $(NOBECOME) $(PROXMOX), $(basename $(wildcard *.yml)))
