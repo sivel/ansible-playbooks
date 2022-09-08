@@ -1,6 +1,7 @@
 - name: Add cloudsmith caddy GPG key
-  apt_key:
+  get_url:
     url: https://dl.cloudsmith.io/public/caddy/stable/gpg.key
+    dest: /etc/apt/trusted.gpg.d/caddy-cloudsmith.asc
 
 - name: Add cloudsmith caddy repository
   apt_repository:

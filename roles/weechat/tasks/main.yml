@@ -1,9 +1,8 @@
 ---
 - name: Install apt key
-  apt_key:
-    id: 11E9DE8848F2B65222AA75B8D1820DB22A11534E
-    keyserver: ha.pool.sks-keyservers.net
-    state: present
+  get_url:
+    url: https://weechat.org/dev/info/debian_repository_signing_key/
+    dest: /etc/apt/trusted.gpg.d/weechat.gpg
   become: true
 
 - name: Install apt repository

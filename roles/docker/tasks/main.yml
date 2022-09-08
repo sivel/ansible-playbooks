@@ -11,10 +11,9 @@
         cache_valid_time: 86400
 
     - name: Add docker apt-key
-      apt_key:
-        id: '0EBFCD88'
+      get_url:
         url: https://download.docker.com/linux/ubuntu/gpg
-        state: present
+        dest: /etc/apt/trusted.gpg.d/docker.asc
 
     - name: Add docker repo
       apt_repository:
