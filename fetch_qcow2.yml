@@ -72,6 +72,7 @@
       rocky8:
         url: https://download.rockylinux.org/pub/rocky/8/images/x86_64/
         checksum: https://download.rockylinux.org/pub/rocky/8/images/x86_64/CHECKSUM
+        pattern: '(?P<href>Rocky-8-GenericCloud-Base-8\.\d+-[\d\.]+\.x86_64.qcow2)'
       rocky9:
         url: https://download.rockylinux.org/pub/rocky/9/images/x86_64/
         checksum_tmpl: "{}.CHECKSUM"
