@@ -1,7 +1,12 @@
 - hosts: localhost
   gather_facts: false
+  any_errors_fatal: true
   vars:
     distros:
+      centos6:
+        url: https://cloud.centos.org/centos/6/images/
+        checksum: https://cloud.centos.org/centos/6/images/sha256sum.txt
+        pattern: '(?P<href>CentOS-6-x86_64-GenericCloud-\d+.qcow2)'
       centos7:
         url: https://cloud.centos.org/centos/7/images/
         # checksum: https://cloud.centos.org/centos/7/images/sha256sum.txt
@@ -12,12 +17,16 @@
       centos_stream9:
         url: https://cloud.centos.org/centos/9-stream/x86_64/images/
         checksum: https://cloud.centos.org/centos/9-stream/x86_64/images/CHECKSUM
-      fedora35:
-        url: https://download.fedoraproject.org/pub/fedora/linux/releases/35/Cloud/x86_64/images/
-        checksum: https://download.fedoraproject.org/pub/fedora/linux/releases/35/Cloud/x86_64/images/Fedora-Cloud-35-1.2-x86_64-CHECKSUM
+      fedora37:
+        url: https://download.fedoraproject.org/pub/fedora/linux/releases/37/Cloud/x86_64/images/
+        checksum: https://download.fedoraproject.org/pub/fedora/linux/releases/37/Cloud/x86_64/images/Fedora-Cloud-37-1.7-x86_64-CHECKSUM
       fedora36:
         url: https://download.fedoraproject.org/pub/fedora/linux/releases/36/Cloud/x86_64/images/
         checksum: https://getfedora.org/static/checksums/36/images/Fedora-Cloud-36-1.5-x86_64-CHECKSUM
+      ubuntu2210:
+        url: https://cloud-images.ubuntu.com/kinetic/current/
+        prefix: ubuntu-22.10-
+        checksum: https://cloud-images.ubuntu.com/kinetic/current/SHA256SUMS
       ubuntu2204:
         url: https://cloud-images.ubuntu.com/jammy/current/
         prefix: ubuntu-22.04-
@@ -61,8 +70,8 @@
         url: https://repo.almalinux.org/almalinux/9/cloud/x86_64/images/
         checksum: https://repo.almalinux.org/almalinux/9/cloud/x86_64/images/CHECKSUM
       rocky8:
-        url: https://download.rockylinux.org/pub/rocky/8/images/
-        checksum: https://download.rockylinux.org/pub/rocky/8/images/CHECKSUM
+        url: https://download.rockylinux.org/pub/rocky/8/images/x86_64/
+        checksum: https://download.rockylinux.org/pub/rocky/8/images/x86_64/CHECKSUM
       rocky9:
         url: https://download.rockylinux.org/pub/rocky/9/images/x86_64/
         checksum_tmpl: "{}.CHECKSUM"
@@ -91,6 +100,7 @@
         checksum: '{{ ([item.1.checksum, item.1.checksum_tmpl]|select("defined") or [None])|first }}'
         only64: '{{ item.1.only64|default(false) }}'
         pattern: '{{ item.1.pattern|default(none) }}'
+        threads: '{{ item.1.threads|default(8) }}'
       loop: '{{ distros|dictsort }}'
       loop_control:
         label: '{{ item.0 }}'
@@ -107,6 +117,9 @@
             return_content: true
           register: index_list
           delegate_to: localhost
+          until: index_list is successful
+          delay: 0
+          retries: 5
 
         - name: Find the latest image
           set_fact:
@@ -135,7 +148,7 @@
           threaded_get_url:
             url: '{{ qcow2_src }}'
             dest: /mnt/data/cloudimg/{{ qcow2_dest }}
-            threads: 8
+            threads: '{{ threads }}'
             timeout: 60
             checksum: '{{ omit if not checksum else checksum_algo ~ ":" ~ checksum.format(qcow2_src) }}'
           register: downloads
