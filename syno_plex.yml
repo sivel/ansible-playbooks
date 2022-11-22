@@ -4,40 +4,46 @@
     PATH: /sbin:/bin:/usr/sbin:/usr/bin:/usr/syno/sbin:/usr/syno/bin:/usr/local/sbin:/usr/local/bin
   tasks:
     - name: Get Plex Media Server Version
-      command: synopkg version "Plex Media Server"
+      command: synopkg version PlexMediaServer
       register: plex_version_output
       become: true
       changed_when: false
 
     - name: Slurp the Plex Preferences.xml file
       slurp:
-        path: /volume1/Plex/Library/Application Support/Plex Media Server/Preferences.xml
+        path: /volume1/PlexMediaServer/AppData/Plex Media Server/Preferences.xml
       register: plex_preferences
 
-    - name: Extract PlexOnlineToken
+    - name: Extract PlexOnlineToken and set installed version info
       set_fact:
         plex_token: >-
           {{ plex_preferences.content|b64decode|regex_findall('PlexOnlineToken="([^"]+)"')|first }}
+        plex_installed_version: '{{ plex_version_output.stdout_lines.0.split("-")|first }}'
+        plex_installed_version_full: '{{ plex_version_output.stdout_lines.0 }}'
 
     - name: Fetch Plex Pass download list
       uri:
-        url: https://plex.tv/api/downloads/5.json?channel=plexpass&X-Plex-Token={{ plex_token }}
+        url: https://plex.tv/api/downloads/5.json?channel=plexpass&X-Plex-Token={{ plex_token }}&build=linux-x86_64&distribution=synology&version={{ plex_installed_version_full }}
+        # url: https://plex.tv/api/downloads/5.json?channel=16&X-Plex-Token={{ plex_token }}&build=linux-x86_64&distribution=synology
+        # url: https://plex.tv/api/downloads/5.json?X-Plex-Token={{ plex_token }}
       register: plex_downloads
       delegate_to: localhost
 
     - name: Set plex version facts
       set_fact:
         plex_installed_version: '{{ plex_version_output.stdout_lines.0.split("-")|first }}'
-        plex_release: '{{ plex_downloads.json.nas.Synology.releases|selectattr("build", "eq", "linux-x86_64")|first }}'
-        plex_version: '{{ plex_downloads.json.nas.Synology.version.split("-")|first }}'
+        plex_release: '{{ synology_dsm7.releases|selectattr("build", "eq", "linux-x86_64")|first }}'
+        plex_version: '{{ synology_dsm7.version.split("-")|first }}'
+      vars:
+        synology_dsm7: '{{ plex_downloads.json.nas["Synology (DSM 7)"] }}'
 
     - name: End if there is no upgrade
       meta: end_play
-      when: plex_installed_version == plex_version
+      when: plex_installed_version is version(plex_version, 'ge')
 
     - block:
         - name: Download updated release package
-          get_url:
+          threaded_get_url:
             url: '{{ plex_release.url }}'
             dest: '/tmp/{{ plex_release.url|basename }}'
           register: plex_download
@@ -45,13 +51,13 @@
         - become: true
           block:
             - name: Stop Plex Media Server
-              command: synopkg stop "Plex Media Server"
+              command: synopkg stop PlexMediaServer
 
             - name: Install Plex Media Server
               command: synopkg install {{ plex_download.dest }}
 
             - name: Start Plex Media Server
-              command: synopkg start "Plex Media Server"
+              command: synopkg start PlexMediaServer
       always:
         - name: Remove release package
           file:
